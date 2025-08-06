@@ -10,3 +10,8 @@ export interface Session {
   roadTypes: RoadType[];
   isNight: boolean;
 }
+
+export interface User {
+  uid: string;
+  email: string | null;
+}
