@@ -9,6 +9,8 @@ const firebaseConfig = {
   storageBucket: "drive-track-7027f.firebasestorage.app",
   apiKey: "AIzaSyCjNqgaLkmO63zOlgU0XwPduuNOdDy1D7k",
   authDomain: "drive-track-7027f.firebaseapp.com",
+  measurementId: "",
+  messagingSenderId: "94983186341"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
