@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
+import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'Drive-Track',
@@ -22,7 +23,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          {children}
+          <div className="pb-16 md:pb-0">
+            {children}
+          </div>
+          <Footer />
         </AuthProvider>
         <Toaster />
       </body>
