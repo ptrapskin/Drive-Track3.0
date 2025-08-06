@@ -5,11 +5,20 @@ import { initialSessions } from '@/lib/data';
 import type { Session } from '@/lib/types';
 import Dashboard from '@/components/dashboard';
 import Tracker from '@/components/tracker';
-import { LogOut } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import DriveTrackIcon from '@/components/drive-track-icon';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from 'next/link';
 
 export default function Home() {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
@@ -51,13 +60,32 @@ export default function Home() {
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome, {user.email}! Your personal driving log.
+              Welcome! Your personal driving log.
             </p>
           </div>
-          <Button onClick={logout} variant="outline">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                 <UserIcon className="h-4 w-4" />
+                {user.email}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
