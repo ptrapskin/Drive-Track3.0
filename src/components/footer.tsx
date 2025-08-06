@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -7,15 +6,15 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
 
-const navItems = [
-  { href: '/', label: 'Dashboard', icon: Home },
-  { href: '/reports/logs', label: 'Logs', icon: BookOpen },
-  { href: '/profile', label: 'Profile', icon: User },
-];
-
 export default function Footer() {
   const pathname = usePathname();
   const { user } = useAuth();
+
+  const navItems = [
+    { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/reports/logs', label: 'Logs', icon: BookOpen },
+    { href: '/profile', label: 'Profile', icon: User },
+  ];
 
   if (!user) {
     return null;
