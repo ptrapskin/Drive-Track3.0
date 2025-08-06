@@ -1,3 +1,5 @@
+"use client";
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
@@ -7,14 +9,20 @@ const firebaseConfig = {
   storageBucket: "drive-track-7027f.firebasestorage.app",
   apiKey: "AIzaSyCjNqgaLkmO63zOlgU0XwPduuNOdDy1D7k",
   authDomain: "drive-track-7027f.firebaseapp.com",
-  messagingSenderId: "94983186341"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
-
+const signInWithGoogle = async () => {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        return result.user;
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        throw error;
+    }
+};
 
 export { app, auth, signInWithGoogle };
