@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Share2, Trash2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DriveTrackIcon from '@/components/drive-track-icon';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -23,6 +24,9 @@ export default function ProfilePage() {
   const [permitDate, setPermitDate] = useState<Date | undefined>();
   const [totalHoursGoal, setTotalHoursGoal] = useState<number>(50);
   const [nightHoursGoal, setNightHoursGoal] = useState<number>(10);
+
+  const [shareEmail, setShareEmail] = useState('');
+  const [sharedWith, setSharedWith] = useState(['friend@example.com']);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,6 +47,27 @@ export default function ProfilePage() {
         title: "Profile Saved",
         description: "Your information has been updated successfully.",
     })
+  };
+  
+  const handleShare = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareEmail) return;
+    // In a real app, you'd send an invitation or add to a database
+    setSharedWith([...sharedWith, shareEmail]);
+    setShareEmail('');
+    toast({
+      title: 'Account Shared',
+      description: `Invitation sent to ${shareEmail}.`,
+    });
+  };
+
+  const handleRemoveShare = (emailToRemove: string) => {
+    // In a real app, you'd update the database
+    setSharedWith(sharedWith.filter((email) => email !== emailToRemove));
+    toast({
+      title: 'Sharing Removed',
+      description: `Access for ${emailToRemove} has been revoked.`,
+    });
   };
 
   if (loading || !user) {
@@ -76,49 +101,99 @@ export default function ProfilePage() {
             </Button>
         </header>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Your Information</CardTitle>
-                <CardDescription>Keep your details up to date.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSave} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="dob">Date of Birth</Label>
-                            <DatePicker date={dateOfBirth} setDate={setDateOfBirth} />
+        <div className="grid gap-8 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Information</CardTitle>
+                    <CardDescription>Keep your details up to date.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSave} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="dob">Date of Birth</Label>
+                                <DatePicker date={dateOfBirth} setDate={setDateOfBirth} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="permit-date">Permit Issue Date</Label>
+                                <DatePicker date={permitDate} setDate={setPermitDate} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="total-hours-goal">Total Driving Hours Goal</Label>
+                                <Input
+                                    id="total-hours-goal"
+                                    type="number"
+                                    value={totalHoursGoal}
+                                    onChange={(e) => setTotalHoursGoal(Number(e.target.value))}
+                                    placeholder="e.g. 50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="night-hours-goal">Night Driving Hours Goal</Label>
+                                <Input
+                                    id="night-hours-goal"
+                                    type="number"
+                                    value={nightHoursGoal}
+                                    onChange={(e) => setNightHoursGoal(Number(e.target.value))}
+                                    placeholder="e.g. 10"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="permit-date">Permit Issue Date</Label>
-                            <DatePicker date={permitDate} setDate={setPermitDate} />
+                        <div className="flex justify-end">
+                            <Button type="submit">Save Changes</Button>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="total-hours-goal">Total Driving Hours Goal</Label>
-                            <Input
-                                id="total-hours-goal"
-                                type="number"
-                                value={totalHoursGoal}
-                                onChange={(e) => setTotalHoursGoal(Number(e.target.value))}
-                                placeholder="e.g. 50"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="night-hours-goal">Night Driving Hours Goal</Label>
-                            <Input
-                                id="night-hours-goal"
-                                type="number"
-                                value={nightHoursGoal}
-                                onChange={(e) => setNightHoursGoal(Number(e.target.value))}
-                                placeholder="e.g. 10"
-                            />
-                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+          </div>
+          <div className="md:col-span-1">
+            <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="w-5 h-5"/>
+                    Share Account
+                  </CardTitle>
+                  <CardDescription>
+                    Grant access to a guardian or friend to view your logs and progress.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form onSubmit={handleShare} className="space-y-2">
+                    <Label htmlFor="share-email">Guardian/Friend Email</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            id="share-email"
+                            type="email"
+                            value={shareEmail}
+                            onChange={(e) => setShareEmail(e.target.value)}
+                            placeholder="name@example.com"
+                            required
+                        />
+                        <Button type="submit" variant="outline">Share</Button>
                     </div>
-                    <div className="flex justify-end">
-                        <Button type="submit">Save Changes</Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                  </form>
+                  <div className="space-y-4">
+                      <Label>Currently Sharing With</Label>
+                      {sharedWith.length > 0 ? (
+                        <ul className="space-y-2">
+                          {sharedWith.map((email) => (
+                            <li key={email} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted">
+                              <span>{email}</span>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveShare(email)}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">You are not sharing your account with anyone.</p>
+                      )}
+                  </div>
+                </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </main>
   );
