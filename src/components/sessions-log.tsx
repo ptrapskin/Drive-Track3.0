@@ -18,10 +18,14 @@ import {
   Home,
   Building2,
   Tractor,
+  Book,
 } from "lucide-react";
+import Link from "next/link";
+import { Button } from "./ui/button";
 
 interface SessionsLogProps {
   sessions: Session[];
+  showViewAll?: boolean;
 }
 
 const WeatherIcon = ({ weather }: { weather: Session["weather"] }) => {
@@ -39,9 +43,11 @@ const WeatherIcon = ({ weather }: { weather: Session["weather"] }) => {
   }
 };
 
-export default function SessionsLog({ sessions }: SessionsLogProps) {
+export default function SessionsLog({ sessions, showViewAll = false }: SessionsLogProps) {
+  const displaySessions = showViewAll ? sessions : sessions.slice(0, 5);
+  
   return (
-    <div className="rounded-lg border">
+    <div>
         <Table>
         <TableHeader>
             <TableRow>
@@ -53,7 +59,7 @@ export default function SessionsLog({ sessions }: SessionsLogProps) {
             </TableRow>
         </TableHeader>
         <TableBody>
-            {sessions.map((session) => (
+            {displaySessions.map((session) => (
             <TableRow key={session.id}>
                 <TableCell className="font-medium">
                 {format(new Date(session.date), "MMM d, yyyy")}
@@ -64,9 +70,9 @@ export default function SessionsLog({ sessions }: SessionsLogProps) {
                 <TableCell className="text-center">
                 {session.miles.toFixed(1)}
                 </TableCell>
-                <TableCell className="flex justify-center items-center gap-2">
-                <WeatherIcon weather={session.weather} />
-                {session.isNight && <Moon className="w-5 h-5" />}
+                <TableCell className="flex justify-center items-center gap-2 pt-4">
+                  <WeatherIcon weather={session.weather} />
+                  {session.isNight && <Moon className="w-5 h-5" />}
                 </TableCell>
                 <TableCell>
                 <div className="flex flex-wrap gap-1">
