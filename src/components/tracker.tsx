@@ -131,7 +131,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
           <div className="text-center">
             <p className="text-muted-foreground">Duration</p>
             <div
-              className={`text-6xl font-bold font-mono tracking-tighter ${
+              className={`text-5xl font-bold font-mono tracking-tighter ${
                 status === "tracking" ? "animate-pulse text-primary" : ""
               }`}
             >
@@ -200,4 +200,3 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     </>
   );
 }
-
