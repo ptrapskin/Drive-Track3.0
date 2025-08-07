@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
-import Footer from '@/components/footer';
+import MainNav from '@/components/main-nav';
 
 export const metadata: Metadata = {
   title: 'Drive-Track',
@@ -23,10 +23,14 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <div className="pb-16 md:pb-0">
-            {children}
-          </div>
-          <Footer />
+            <div className="md:flex">
+              <MainNav />
+              <main className="flex-1 md:ml-64 lg:ml-72">
+                  <div className="pb-16 md:pb-0">
+                      {children}
+                  </div>
+              </main>
+            </div>
         </AuthProvider>
         <Toaster />
       </body>

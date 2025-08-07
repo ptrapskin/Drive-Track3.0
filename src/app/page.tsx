@@ -51,15 +51,15 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8 flex justify-between items-center">
-          <div>
+         <header className="mb-8 flex justify-between items-start md:hidden">
+           <div>
             <div className="flex items-center gap-3 mb-2">
               <DriveTrackIcon className="w-8 h-8 text-primary" />
               <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                 Drive-Track
               </h1>
             </div>
-            <p className="text-muted-foreground">
+             <p className="text-muted-foreground">
               Welcome! Your personal driving log.
             </p>
           </div>

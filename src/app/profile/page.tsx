@@ -81,7 +81,7 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-8 flex justify-between items-center md:hidden">
              <div>
                  <div className="flex items-center gap-3 mb-2">
                     <UserIcon className="w-8 h-8 text-primary" />
@@ -93,12 +93,6 @@ export default function ProfilePage() {
                     Manage your personal details and driving goals.
                 </p>
             </div>
-            <Button asChild variant="outline">
-                <Link href="/">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
-                </Link>
-            </Button>
         </header>
 
         <div className="grid gap-8 md:grid-cols-3">
