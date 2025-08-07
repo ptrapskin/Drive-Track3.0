@@ -37,7 +37,7 @@ export default function LandingPage() {
                     The Smart Way to Log Your Driving Hours
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Drive-Track makes it simple for student drivers to log practice hours, master essential skills, and generate official reports for the DMV.
+                    Drive-Track makes it simple for student drivers to log practice hours, learn essential skills, and generate official reports for the DMV.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -90,7 +90,7 @@ export default function LandingPage() {
                         <Award className="w-8 h-8 text-primary" />
                     </div>
                 </div>
-                <h3 className="text-xl font-bold">Skills Mastery</h3>
+                <h3 className="text-xl font-bold">Skills Learning</h3>
                 <p className="text-sm text-muted-foreground">
                     Work through a comprehensive list of 30 essential driving skills. Earn badges as you complete them and build your confidence.
                 </p>

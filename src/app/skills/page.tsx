@@ -42,7 +42,7 @@ export default function SkillsPage() {
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Master these skills to become a safe and confident driver.
+            Learn these skills to become a safe and confident driver.
           </p>
         </header>
         
