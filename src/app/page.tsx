@@ -100,8 +100,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
-          <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
+        <section id="how-it-works" className="w-full py-12 md:py-16 lg:py-20 bg-muted/40">
+          <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-1 lg:gap-10">
             <div className="space-y-4">
               <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">How It Works</div>
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Getting Started is as Easy as 1-2-3</h2>
@@ -132,14 +132,6 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
-             <Image
-                src="https://placehold.co/600x550.png"
-                width="600"
-                height="550"
-                alt="Product"
-                data-ai-hint="app dashboard mobile view"
-                className="mx-auto aspect-[1/1] overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-              />
           </div>
         </section>
         
