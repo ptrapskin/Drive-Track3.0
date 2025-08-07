@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 const DriveTrackIcon = ({ className }: { className?: string }) => (
   <Image
-    src="/images/drive-track-logo.png"
+    src="/images/drive-track-icon-blue.png"
     alt="Drive-Track Logo - Steering Wheel"
     width={32}
     height={32}
