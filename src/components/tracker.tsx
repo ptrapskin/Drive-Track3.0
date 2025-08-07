@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gauge, Play, StopCircle, CloudSun, Milestone, Hourglass, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Gauge, Play, StopCircle, Milestone } from "lucide-react";
 import type { Session, RoadType, WeatherCondition, TimeOfDay } from "@/lib/types";
 import SaveSessionDialog from "./save-session-dialog";
 import { TimeOfDayIcon } from "./sessions-log";
@@ -55,7 +55,7 @@ const WeatherIcon = ({ weather }: { weather: WeatherCondition }) => {
     case "Snowy":
       return <Snowflake className="w-5 h-5 text-cyan-500" />;
     default:
-      return <CloudSun className="w-5 h-5" />;
+      return <Sun className="w-5 h-5" />;
   }
 };
 
@@ -69,7 +69,6 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const [sessionWeather, setSessionWeather] = useState<WeatherCondition>("Sunny");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Afternoon");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSpeed, setCurrentSpeed] = useState(0);
   
   const watchIdRef = useRef<number | null>(null);
   const lastPositionRef = useRef<GeolocationCoordinates | null>(null);
@@ -119,13 +118,12 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                     }
 
                     lastPositionRef.current = coords;
-                    setCurrentSpeed(coords.speed ? coords.speed * 2.23694 : 0); // m/s to mph
-
-                    let roadType: RoadType;
                     const speedMph = coords.speed ? coords.speed * 2.23694 : 0;
-                    if (speedMph < 30) {
+                    
+                    let roadType: RoadType;
+                    if (speedMph <= 30) {
                         roadType = "Residential";
-                    } else if (speedMph < 55) {
+                    } else if (speedMph <= 55) {
                         roadType = "Arterial";
                     } else {
                         roadType = "Highway";
@@ -135,7 +133,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                 },
                 (error) => {
                     console.error("Geolocation error:", error);
-                    alert("Geolocation is not available or permission was denied. Mileage and weather will not be tracked automatically.");
+                    alert("Geolocation is not available or permission was denied. Mileage, road type, and weather will not be tracked automatically.");
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
@@ -178,7 +176,6 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     setMiles(0);
     setCurrentRoadType("Residential");
     setSessionRoadTypes(new Set());
-    setCurrentSpeed(0);
     if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if(watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
     lastPositionRef.current = null;
@@ -207,7 +204,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
       duration: elapsedSeconds,
       miles: miles,
       weather: sessionWeather,
-      roadTypes: Array.from(sessionRoadTypes),
+      roadTypes: Array.from(sessionRoadTypes).sort(),
       timeOfDay: timeOfDay,
   }), [elapsedSeconds, miles, sessionWeather, sessionRoadTypes, timeOfDay]);
 

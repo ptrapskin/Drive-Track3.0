@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -45,7 +46,7 @@ interface SaveSessionDialogProps {
 
 const sessionSchema = z.object({
   duration: z.number().positive("Duration must be positive."),
-  miles: z.number().positive("Miles must be positive."),
+  miles: z.number().min(0, "Miles must be non-negative."),
   weather: z.enum(["Sunny", "Cloudy", "Rainy", "Snowy"]),
   timeOfDay: z.enum(["Morning", "Afternoon", "Evening", "Night"]),
 });
