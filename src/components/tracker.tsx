@@ -214,13 +214,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   return (
     <>
       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <Hourglass className="text-primary" />
-            New Driving Session
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center space-y-6">
+        <CardContent className="flex flex-col items-center justify-center space-y-6 pt-6">
           <div className="text-center">
             <p className="text-muted-foreground">Duration</p>
             <div
