@@ -37,7 +37,7 @@ export default function LandingPage() {
                     The Smart Way to Log Your Driving Hours
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Drive-Track makes it simple for student drivers to log practice hours, learn essential skills, and generate official reports for the DMV.
+                    Drive-Track makes it simple for student drivers to log practice hours, learn essential skills, and generate reports for the DMV.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -103,7 +103,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold">Printable PDF Reports</h3>
                 <p className="text-sm text-muted-foreground">
-                    Generate an official, detailed driving log with one click. Perfect for submitting to the DMV or for insurance purposes.
+                    Generate a detailed driving log with one click. Perfect for submitting to the DMV or for insurance purposes.
                 </p>
               </div>
             </div>
