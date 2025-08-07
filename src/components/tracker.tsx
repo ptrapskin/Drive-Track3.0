@@ -9,14 +9,14 @@ import type { Session, RoadType, WeatherCondition, TimeOfDay } from "@/lib/types
 import SaveSessionDialog from "./save-session-dialog";
 import { TimeOfDayIcon } from "./sessions-log";
 import { haversineDistance } from "@/lib/geolocation";
+import { Sun, Cloud, CloudRain, Snowflake } from "lucide-react";
+
 
 interface TrackerProps {
   onSaveSession: (session: Omit<Session, "id" | "date">) => void;
 }
 
 type TrackingStatus = "idle" | "tracking" | "paused" | "stopped";
-
-const weatherOptions: WeatherCondition[] = ["Sunny", "Cloudy", "Rainy", "Snowy"];
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -36,6 +36,30 @@ const getTimeOfDay = (): TimeOfDay => {
     return "Night";
 }
 
+const mapWeatherCondition = (weatherId: number): WeatherCondition => {
+    if (weatherId >= 200 && weatherId < 600) return "Rainy";
+    if (weatherId >= 600 && weatherId < 700) return "Snowy";
+    if (weatherId === 800) return "Sunny";
+    if (weatherId > 800) return "Cloudy";
+    return "Sunny";
+};
+
+const WeatherIcon = ({ weather }: { weather: WeatherCondition }) => {
+  switch (weather) {
+    case "Sunny":
+      return <Sun className="w-5 h-5 text-yellow-500" />;
+    case "Cloudy":
+      return <Cloud className="w-5 h-5 text-gray-500" />;
+    case "Rainy":
+      return <CloudRain className="w-5 h-5 text-blue-500" />;
+    case "Snowy":
+      return <Snowflake className="w-5 h-5 text-cyan-500" />;
+    default:
+      return <CloudSun className="w-5 h-5" />;
+  }
+};
+
+
 export default function Tracker({ onSaveSession }: TrackerProps) {
   const [status, setStatus] = useState<TrackingStatus>("idle");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -51,6 +75,27 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const lastPositionRef = useRef<GeolocationCoordinates | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const fetchWeather = async (lat: number, lon: number) => {
+    try {
+        const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+        if (!apiKey) {
+            console.error("OpenWeather API key is missing.");
+            return;
+        }
+        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch weather data');
+        }
+        const data = await response.json();
+        const weatherId = data.weather[0].id;
+        setSessionWeather(mapWeatherCondition(weatherId));
+    } catch (error) {
+        console.error("Could not fetch weather:", error);
+        // Fallback to a default weather
+        setSessionWeather("Sunny");
+    }
+  };
+
 
   useEffect(() => {
     if (status === "tracking") {
@@ -64,10 +109,15 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
             watchIdRef.current = navigator.geolocation.watchPosition(
                 (position) => {
                     const { coords } = position;
+                    
                     if (lastPositionRef.current) {
                         const distance = haversineDistance(lastPositionRef.current, coords);
                         setMiles((prevMiles) => prevMiles + distance);
+                    } else {
+                        // This is the first location update, fetch weather
+                        fetchWeather(coords.latitude, coords.longitude);
                     }
+
                     lastPositionRef.current = coords;
                     setCurrentSpeed(coords.speed ? coords.speed * 2.23694 : 0); // m/s to mph
 
@@ -85,7 +135,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                 },
                 (error) => {
                     console.error("Geolocation error:", error);
-                    alert("Geolocation is not available or permission was denied. Mileage will not be tracked.");
+                    alert("Geolocation is not available or permission was denied. Mileage and weather will not be tracked automatically.");
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
@@ -113,7 +163,6 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
 
   const handleStart = () => {
     setTimeOfDay(getTimeOfDay());
-    setSessionWeather(weatherOptions[Math.floor(Math.random() * weatherOptions.length)]);
     setSessionRoadTypes(new Set<RoadType>().add("Residential"));
     setStatus("tracking");
   };
@@ -201,7 +250,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
             <div>
               <p className="text-muted-foreground text-sm">Weather</p>
               <p className="font-bold text-2xl flex items-center justify-center gap-2">
-                <CloudSun />
+                <WeatherIcon weather={sessionWeather} />
                 {sessionWeather}
               </p>
             </div>
