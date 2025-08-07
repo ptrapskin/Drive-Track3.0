@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from 'next/link';
-import { Home, BookOpen, User as UserIcon, LogOut, Hourglass, Award } from 'lucide-react';
+import { Home, BookOpen, User as UserIcon, LogOut, Hourglass, Award, CircleUser } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
@@ -80,7 +81,7 @@ export default function MainNav() {
               <div className="mt-auto p-4 border-t">
                   <div className="flex items-center gap-3 mb-4">
                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                            <UserIcon className="w-6 h-6 text-primary" />
+                            <CircleUser className="w-6 h-6 text-primary" />
                        </div>
                        <div>
                            <p className="text-sm font-medium">{user.email}</p>
