@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
 import { Button } from './ui/button';
+import DriveTrackLogo from './drive-track-logo';
 
 export default function MainNav() {
   const pathname = usePathname();
@@ -53,6 +54,7 @@ export default function MainNav() {
       <aside className="hidden md:flex flex-col w-64 lg:w-72 fixed inset-y-0 left-0 z-50 bg-muted/40 border-r">
           <div className="flex flex-col flex-grow">
               <div className="p-6 flex items-center gap-3">
+                  <DriveTrackLogo />
                   <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">
                       Drive-Track
                   </h1>

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import { useSessions } from '@/context/sessions-context';
+import DriveTrackLogo from '@/components/drive-track-logo';
 
 export default function Home() {
   const { sessions } = useSessions();
@@ -43,6 +44,7 @@ export default function Home() {
          <header className="mb-8 flex justify-between items-start md:hidden">
            <div>
             <div className="flex items-center gap-3 mb-2">
+              <DriveTrackLogo />
               <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                 Drive-Track
               </h1>
