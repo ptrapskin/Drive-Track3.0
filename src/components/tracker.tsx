@@ -1,11 +1,13 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gauge, Play, StopCircle, CloudSun, Milestone, Hourglass } from "lucide-react";
+import { Gauge, Play, StopCircle, CloudSun, Milestone, Hourglass, Clock } from "lucide-react";
 import type { Session, RoadType, WeatherCondition, TimeOfDay } from "@/lib/types";
 import SaveSessionDialog from "./save-session-dialog";
+import { TimeOfDayIcon } from "./sessions-log";
 
 interface TrackerProps {
   onSaveSession: (session: Omit<Session, "id" | "date">) => void;
@@ -137,12 +139,19 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 w-full text-center">
+          <div className="grid grid-cols-2 gap-6 w-full text-center">
             <div>
               <p className="text-muted-foreground text-sm">Miles</p>
               <p className="font-bold text-2xl flex items-center justify-center gap-2">
                 <Gauge />
                 {miles.toFixed(2)}
+              </p>
+            </div>
+             <div>
+              <p className="text-muted-foreground text-sm">Time of Day</p>
+              <p className="font-bold text-2xl flex items-center justify-center gap-2">
+                <TimeOfDayIcon timeOfDay={timeOfDay} />
+                {timeOfDay}
               </p>
             </div>
             <div>
@@ -191,3 +200,4 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     </>
   );
 }
+

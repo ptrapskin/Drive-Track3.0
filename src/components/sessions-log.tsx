@@ -39,7 +39,7 @@ const WeatherIcon = ({ weather }: { weather: Session["weather"] }) => {
   }
 };
 
-const TimeOfDayIcon = ({ timeOfDay }: { timeOfDay: TimeOfDay }) => {
+export const TimeOfDayIcon = ({ timeOfDay }: { timeOfDay: TimeOfDay }) => {
     switch(timeOfDay) {
         case "Morning": return <Sunrise className="w-5 h-5 text-orange-400" />;
         case "Afternoon": return <Sun className="w-5 h-5 text-yellow-500" />;
