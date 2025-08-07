@@ -5,7 +5,6 @@ import { useAuth } from "@/context/auth-context";
 import { useSessions } from "@/context/sessions-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import DriveTrackIcon from "@/components/drive-track-icon";
 
 export default function TrackPage() {
     const { addSession } = useSessions();
@@ -32,7 +31,6 @@ export default function TrackPage() {
                  <header className="mb-8 flex justify-between items-start md:hidden">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                        <DriveTrackIcon className="w-8 h-8 text-primary" />
                         <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                             Track Session
                         </h1>

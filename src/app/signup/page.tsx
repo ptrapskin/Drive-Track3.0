@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import DriveTrackIcon from '@/components/drive-track-icon';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" {...props}>
@@ -69,7 +68,6 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
              <div className="flex justify-center items-center gap-3 mb-2">
-                <DriveTrackIcon className="w-8 h-8 text-primary" />
                 <CardTitle className="text-4xl font-bold font-headline tracking-tight text-primary">
                 Drive-Track
                 </CardTitle>

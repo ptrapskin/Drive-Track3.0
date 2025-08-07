@@ -5,7 +5,6 @@ import { Home, BookOpen, User as UserIcon, LogOut, Hourglass, Award } from 'luci
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
-import DriveTrackIcon from './drive-track-icon';
 import { Button } from './ui/button';
 
 export default function MainNav() {
@@ -54,7 +53,6 @@ export default function MainNav() {
       <aside className="hidden md:flex flex-col w-64 lg:w-72 fixed inset-y-0 left-0 z-50 bg-muted/40 border-r">
           <div className="flex flex-col flex-grow">
               <div className="p-6 flex items-center gap-3">
-                  <DriveTrackIcon className="w-8 h-8 text-primary" />
                   <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">
                       Drive-Track
                   </h1>

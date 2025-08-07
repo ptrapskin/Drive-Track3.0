@@ -12,7 +12,6 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
-import DriveTrackIcon from '@/components/drive-track-icon';
 import { useSessions } from '@/context/sessions-context';
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -70,22 +69,12 @@ export default function LogsPage() {
   const downloadPdf = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     
-    // Header
-    const canvas = document.createElement('canvas');
-    const img = document.querySelector('[data-ai-hint="steering wheel"]') as HTMLImageElement;
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
-    ctx?.drawImage(img, 0, 0, img.width, img.height);
-    const dataUrl = canvas.toDataURL('image/png');
-
-    doc.addImage(dataUrl, 'PNG', 15, 12, 20, 20);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Drive-Track Driving Log', 40, 22);
+    doc.text('Drive-Track Driving Log', 15, 22);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Report Generated: ${format(new Date(), 'MMM d, yyyy')}`, 40, 28);
+    doc.text(`Report Generated: ${format(new Date(), 'MMM d, yyyy')}`, 15, 28);
     
     // User Info
     doc.setFontSize(12);
@@ -148,7 +137,6 @@ export default function LogsPage() {
         <header className="mb-8 flex flex-col md:flex-row justify-between md:items-center">
             <div>
                  <div className="flex items-center gap-3 mb-2">
-                    <DriveTrackIcon className="w-8 h-8 text-primary" />
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                         Full Driving Log
                     </h1>

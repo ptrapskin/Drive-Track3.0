@@ -7,7 +7,6 @@ import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import DriveTrackIcon from '@/components/drive-track-icon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +43,6 @@ export default function Home() {
          <header className="mb-8 flex justify-between items-start md:hidden">
            <div>
             <div className="flex items-center gap-3 mb-2">
-              <DriveTrackIcon className="w-8 h-8 text-primary" />
               <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                 Drive-Track
               </h1>
