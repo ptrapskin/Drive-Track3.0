@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { initialSessions } from '@/lib/data';
@@ -47,6 +47,26 @@ export default function LogsPage() {
     }
   }, [user, loading, router]);
 
+  const { totalHours, totalMiles, nightHours } = useMemo(() => {
+    const totals = sessions.reduce(
+      (acc, session) => {
+        acc.totalDuration += session.duration;
+        acc.totalMiles += session.miles;
+        if (session.isNight) {
+          acc.nightDuration += session.duration;
+        }
+        return acc;
+      },
+      { totalDuration: 0, totalMiles: 0, nightDuration: 0 }
+    );
+    return {
+      totalHours: (totals.totalDuration / 3600).toFixed(1),
+      totalMiles: totals.totalMiles.toFixed(1),
+      nightHours: (totals.nightDuration / 3600).toFixed(1),
+    };
+  }, [sessions]);
+
+
   const downloadPdf = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     
@@ -76,6 +96,19 @@ export default function LogsPage() {
         startY: 48,
         head: [['Name', 'Date of Birth', 'Permit Issue Date', 'Total Goal (hrs)', 'Night Goal (hrs)']],
         body: [[userProfile.name, userProfile.dob, userProfile.permitDate, userProfile.totalHoursGoal, userProfile.nightHoursGoal]],
+        theme: 'grid',
+        styles: { fontSize: 10 },
+    });
+
+    // Summary
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Overall Progress', 15, (doc as any).lastAutoTable.finalY + 10);
+    doc.setFont('helvetica', 'normal');
+    doc.autoTable({
+        startY: (doc as any).lastAutoTable.finalY + 13,
+        head: [['Total Hours', 'Total Miles', 'Night Hours']],
+        body: [[totalHours, totalMiles, nightHours]],
         theme: 'grid',
         styles: { fontSize: 10 },
     });
