@@ -19,7 +19,7 @@ export default function Dashboard({ sessions }: DashboardProps) {
       (acc, session) => {
         acc.totalDuration += session.duration;
         acc.totalMiles += session.miles;
-        if (session.isNight) {
+        if (session.timeOfDay === 'Night') {
           acc.nightDuration += session.duration;
         }
         return acc;

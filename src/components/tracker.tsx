@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gauge, Play, StopCircle, CloudSun, Milestone, Hourglass } from "lucide-react";
-import type { Session, RoadType, WeatherCondition } from "@/lib/types";
+import type { Session, RoadType, WeatherCondition, TimeOfDay } from "@/lib/types";
 import SaveSessionDialog from "./save-session-dialog";
 
 interface TrackerProps {
@@ -25,6 +25,14 @@ const formatTime = (totalSeconds: number) => {
   )}:${String(seconds).padStart(2, "0")}`;
 };
 
+const getTimeOfDay = (): TimeOfDay => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Morning";
+    if (hour >= 12 && hour < 17) return "Afternoon";
+    if (hour >= 17 && hour < 21) return "Evening";
+    return "Night";
+}
+
 export default function Tracker({ onSaveSession }: TrackerProps) {
   const [status, setStatus] = useState<TrackingStatus>("idle");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -32,7 +40,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const [currentRoadType, setCurrentRoadType] = useState<RoadType>("Residential");
   const [sessionRoadTypes, setSessionRoadTypes] = useState<Set<RoadType>>(new Set());
   const [sessionWeather, setSessionWeather] = useState<WeatherCondition>("Sunny");
-  const [isNight, setIsNight] = useState(false);
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Afternoon");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -62,8 +70,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   }, [status]);
 
   const handleStart = () => {
-    const hour = new Date().getHours();
-    setIsNight(hour < 6 || hour >= 19);
+    setTimeOfDay(getTimeOfDay());
     setSessionWeather(weatherOptions[Math.floor(Math.random() * weatherOptions.length)]);
     setSessionRoadTypes(new Set<RoadType>().add("Residential"));
     setStatus("tracking");
@@ -106,8 +113,8 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
       miles: miles,
       weather: sessionWeather,
       roadTypes: Array.from(sessionRoadTypes),
-      isNight: isNight,
-  }), [elapsedSeconds, miles, sessionWeather, sessionRoadTypes, isNight]);
+      timeOfDay: timeOfDay,
+  }), [elapsedSeconds, miles, sessionWeather, sessionRoadTypes, timeOfDay]);
 
   return (
     <>

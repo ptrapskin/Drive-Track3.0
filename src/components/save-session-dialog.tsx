@@ -18,10 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import type { Session, RoadType, WeatherCondition } from "@/lib/types";
-import { useForm, Controller } from "react-hook-form";
+import type { Session, TimeOfDay } from "@/lib/types";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -48,7 +47,7 @@ const sessionSchema = z.object({
   duration: z.number().positive("Duration must be positive."),
   miles: z.number().positive("Miles must be positive."),
   weather: z.enum(["Sunny", "Cloudy", "Rainy", "Snowy"]),
-  isNight: z.boolean(),
+  timeOfDay: z.enum(["Morning", "Afternoon", "Evening", "Night"]),
 });
 
 export default function SaveSessionDialog({
@@ -67,19 +66,13 @@ export default function SaveSessionDialog({
       duration: session.duration,
       miles: parseFloat(session.miles.toFixed(2)),
       weather: session.weather,
-      isNight: session.isNight,
+      timeOfDay: session.timeOfDay,
     },
   });
   
   const onSubmit = (data: z.infer<typeof sessionSchema>) => {
-    onSave({ ...session, ...data });
+    onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay });
     setIsEditing(false);
-  };
-
-  const formatTime = (totalSeconds: number) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
   };
 
   if (!isOpen) return null;
@@ -148,30 +141,36 @@ export default function SaveSessionDialog({
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="timeOfDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time of Day</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isEditing}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select time of day" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Morning">Morning</SelectItem>
+                        <SelectItem value="Afternoon">Afternoon</SelectItem>
+                        <SelectItem value="Evening">Evening</SelectItem>
+                        <SelectItem value="Night">Night</SelectItem>
+                      </SelectContent>
+                    </Select>
+                     <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="space-y-2">
                  <Label>Road Types Driven</Label>
                  <div className="flex flex-wrap gap-2">
                     {session.roadTypes.map(type => <Badge key={type} variant="secondary">{type}</Badge>)}
                  </div>
               </div>
-              <FormField
-                control={form.control}
-                name="isNight"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                        <FormLabel>Night Driving</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={!isEditing}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+
             </div>
 
             <DialogFooter className="grid grid-cols-2 sm:grid-cols-4 gap-2">

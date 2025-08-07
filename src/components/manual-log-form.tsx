@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -22,10 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DatePicker } from "./ui/date-picker";
-import type { RoadType, Session, WeatherCondition } from "@/lib/types";
+import type { RoadType, Session, TimeOfDay, WeatherCondition } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { MultiSelect } from "./ui/multi-select";
 import { Save } from "lucide-react";
@@ -46,7 +44,9 @@ const manualLogSchema = z.object({
       required_error: "Weather condition is required."
   }),
   roadTypes: z.array(z.string()).min(1, "At least one road type is required."),
-  isNight: z.boolean().default(false),
+  timeOfDay: z.enum(["Morning", "Afternoon", "Evening", "Night"], {
+      required_error: "Time of day is required."
+  }),
 });
 
 type ManualLogFormValues = z.infer<typeof manualLogSchema>;
@@ -65,7 +65,7 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
       miles: 10,
       weather: "Sunny",
       roadTypes: ["Residential"],
-      isNight: false,
+      timeOfDay: "Afternoon",
     },
   });
 
@@ -75,6 +75,7 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
         duration: data.duration * 60, // Convert minutes to seconds
         date: data.date.toISOString(),
         roadTypes: data.roadTypes as RoadType[],
+        timeOfDay: data.timeOfDay as TimeOfDay,
     };
     onSave(newSession);
 
@@ -173,21 +174,24 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
                         />
                     <FormField
                         control={form.control}
-                        name="isNight"
+                        name="timeOfDay"
                         render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                <FormLabel className="text-base">Night Driving</FormLabel>
-                                <FormDescription>
-                                    Was this session driven at night?
-                                </FormDescription>
-                                </div>
+                            <FormItem>
+                            <FormLabel>Time of Day</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select time of day..." />
+                                </SelectTrigger>
                                 </FormControl>
+                                <SelectContent>
+                                <SelectItem value="Morning">Morning</SelectItem>
+                                <SelectItem value="Afternoon">Afternoon</SelectItem>
+                                <SelectItem value="Evening">Evening</SelectItem>
+                                <SelectItem value="Night">Night</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
                             </FormItem>
                         )}
                         />

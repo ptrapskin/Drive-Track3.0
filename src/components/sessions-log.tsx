@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Session } from "@/lib/types";
+import type { Session, TimeOfDay } from "@/lib/types";
 import { format } from "date-fns";
 import {
   Sun,
@@ -15,8 +15,6 @@ import {
   CloudRain,
   Snowflake,
   Moon,
-  Clock,
-  Coffee,
   Sunrise,
   Sunset,
 } from "lucide-react";
@@ -41,13 +39,15 @@ const WeatherIcon = ({ weather }: { weather: Session["weather"] }) => {
   }
 };
 
-const getTimeOfDay = (date: Date): { name: "Morning" | "Afternoon" | "Evening" | "Night", icon: React.ReactNode } => {
-    const hour = date.getHours();
-    if (hour >= 5 && hour < 12) return { name: "Morning", icon: <Sunrise className="w-5 h-5 text-orange-400" /> };
-    if (hour >= 12 && hour < 17) return { name: "Afternoon", icon: <Sun className="w-5 h-5 text-yellow-500" /> };
-    if (hour >= 17 && hour < 21) return { name: "Evening", icon: <Sunset className="w-5 h-5 text-purple-500" /> };
-    return { name: "Night", icon: <Moon className="w-5 h-5 text-gray-400" /> };
-};
+const TimeOfDayIcon = ({ timeOfDay }: { timeOfDay: TimeOfDay }) => {
+    switch(timeOfDay) {
+        case "Morning": return <Sunrise className="w-5 h-5 text-orange-400" />;
+        case "Afternoon": return <Sun className="w-5 h-5 text-yellow-500" />;
+        case "Evening": return <Sunset className="w-5 h-5 text-purple-500" />;
+        case "Night": return <Moon className="w-5 h-5 text-gray-400" />;
+        default: return null;
+    }
+}
 
 
 export default function SessionsLog({ sessions, showViewAll = false }: SessionsLogProps) {
@@ -62,14 +62,13 @@ export default function SessionsLog({ sessions, showViewAll = false }: SessionsL
             <TableHead className="text-center">Duration</TableHead>
             <TableHead className="text-center">Miles</TableHead>
             <TableHead className="text-center">Time of Day</TableHead>
-            <TableHead className="text-center">Conditions</TableHead>
+            <TableHead className="text-center">Weather</TableHead>
             <TableHead>Road Types</TableHead>
             </TableRow>
         </TableHeader>
         <TableBody>
             {displaySessions.map((session) => {
               const sessionDate = new Date(session.date);
-              const timeOfDay = getTimeOfDay(sessionDate);
               return (
                 <TableRow key={session.id}>
                     <TableCell className="font-medium">
@@ -82,13 +81,12 @@ export default function SessionsLog({ sessions, showViewAll = false }: SessionsL
                     {session.miles.toFixed(1)}
                     </TableCell>
                     <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2" title={timeOfDay.name}>
-                            {timeOfDay.icon}
+                        <div className="flex items-center justify-center gap-2" title={session.timeOfDay}>
+                            <TimeOfDayIcon timeOfDay={session.timeOfDay} />
                         </div>
                     </TableCell>
-                    <TableCell className="flex justify-center items-center gap-2 pt-4">
+                    <TableCell className="flex justify-center items-center pt-4">
                       <WeatherIcon weather={session.weather} />
-                      {session.isNight && <div title="Night Drive"><Moon className="w-5 h-5" /></div>}
                     </TableCell>
                     <TableCell>
                     <div className="flex flex-wrap gap-1">

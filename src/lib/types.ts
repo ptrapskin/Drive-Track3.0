@@ -1,5 +1,6 @@
 export type RoadType = "Residential" | "Arterial" | "Highway";
 export type WeatherCondition = "Sunny" | "Cloudy" | "Rainy" | "Snowy";
+export type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
 
 export interface Session {
   id: string;
@@ -8,7 +9,7 @@ export interface Session {
   miles: number;
   weather: WeatherCondition;
   roadTypes: RoadType[];
-  isNight: boolean;
+  timeOfDay: TimeOfDay;
 }
 
 export interface User {

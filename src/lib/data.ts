@@ -8,7 +8,7 @@ export const initialSessions: Session[] = [
     miles: 45,
     weather: 'Sunny',
     roadTypes: ['Arterial', 'Highway'],
-    isNight: false,
+    timeOfDay: 'Afternoon',
   },
   {
     id: '2',
@@ -17,7 +17,7 @@ export const initialSessions: Session[] = [
     miles: 15,
     weather: 'Cloudy',
     roadTypes: ['Residential', 'Arterial'],
-    isNight: true,
+    timeOfDay: 'Night',
   },
   {
     id: '3',
@@ -26,7 +26,7 @@ export const initialSessions: Session[] = [
     miles: 60,
     weather: 'Rainy',
     roadTypes: ['Highway'],
-    isNight: false,
+    timeOfDay: 'Morning',
   },
   {
     id: '4',
@@ -35,6 +35,6 @@ export const initialSessions: Session[] = [
     miles: 22,
     weather: 'Sunny',
     roadTypes: ['Residential'],
-    isNight: false,
+    timeOfDay: 'Evening',
   }
 ];

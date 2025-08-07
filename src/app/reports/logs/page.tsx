@@ -18,14 +18,6 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
 }
 
-const getTimeOfDay = (date: Date) => {
-    const hour = date.getHours();
-    if (hour >= 5 && hour < 12) return "Morning";
-    if (hour >= 12 && hour < 17) return "Afternoon";
-    if (hour >= 17 && hour < 21) return "Evening";
-    return "Night";
-};
-
 export default function LogsPage() {
   const { sessions } = useSessions();
   const { user, loading } = useAuth();
@@ -51,7 +43,7 @@ export default function LogsPage() {
       (acc, session) => {
         acc.totalDuration += session.duration;
         acc.totalMiles += session.miles;
-        if (session.isNight) {
+        if (session.timeOfDay === 'Night') {
           acc.nightDuration += session.duration;
         }
         return acc;
@@ -105,15 +97,14 @@ export default function LogsPage() {
     // Sessions Log
     doc.autoTable({
       startY: (doc as any).lastAutoTable.finalY + 10,
-      head: [['Date', 'Duration (hrs)', 'Miles', 'Time of Day', 'Weather', 'Road Types', 'Night Drive']],
+      head: [['Date', 'Duration (hrs)', 'Miles', 'Time of Day', 'Weather', 'Road Types']],
       body: sessions.map(session => [
         format(new Date(session.date), "MMM d, yyyy"),
         (session.duration / 3600).toFixed(1),
         session.miles.toFixed(1),
-        getTimeOfDay(new Date(session.date)),
+        session.timeOfDay,
         session.weather,
         session.roadTypes.join(', '),
-        session.isNight ? 'Yes' : 'No'
       ]),
       theme: 'striped',
       headStyles: { fillColor: [38, 38, 180] },
