@@ -8,20 +8,98 @@ import { initialSessions } from '@/lib/data';
 import type { Session } from '@/lib/types';
 import SessionsLog from '@/components/sessions-log';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import type { UserOptions } from 'jspdf-autotable';
+import { format } from 'date-fns';
 import DriveTrackIcon from '@/components/drive-track-icon';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: UserOptions) => jsPDF;
+}
+
+const getTimeOfDay = (date: Date) => {
+    const hour = date.getHours();
+    if (hour >= 5 && hour < 12) return "Morning";
+    if (hour >= 12 && hour < 17) return "Afternoon";
+    if (hour >= 17 && hour < 21) return "Evening";
+    return "Night";
+};
 
 export default function LogsPage() {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // Mock user profile data - in a real app, this would be fetched from your database
+  const userProfile = {
+      name: user?.email?.split('@')[0] || "Student Driver",
+      dob: 'Jan 1, 2008',
+      permitDate: 'Jan 1, 2024',
+      totalHoursGoal: 50,
+      nightHoursGoal: 10,
+  };
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  const downloadPdf = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    
+    // Header
+    const canvas = document.createElement('canvas');
+    const img = document.querySelector('[data-ai-hint="steering wheel"]') as HTMLImageElement;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx?.drawImage(img, 0, 0, img.width, img.height);
+    const dataUrl = canvas.toDataURL('image/png');
+
+    doc.addImage(dataUrl, 'PNG', 15, 12, 20, 20);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Drive-Track Driving Log', 40, 22);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Report Generated: ${format(new Date(), 'MMM d, yyyy')}`, 40, 28);
+    
+    // User Info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Driver Information', 15, 45);
+    doc.setFont('helvetica', 'normal');
+    doc.autoTable({
+        startY: 48,
+        head: [['Name', 'Date of Birth', 'Permit Issue Date', 'Total Goal (hrs)', 'Night Goal (hrs)']],
+        body: [[userProfile.name, userProfile.dob, userProfile.permitDate, userProfile.totalHoursGoal, userProfile.nightHoursGoal]],
+        theme: 'grid',
+        styles: { fontSize: 10 },
+    });
+
+    // Sessions Log
+    doc.autoTable({
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [['Date', 'Duration (hrs)', 'Miles', 'Time of Day', 'Weather', 'Road Types', 'Night Drive']],
+      body: sessions.map(session => [
+        format(new Date(session.date), "MMM d, yyyy"),
+        (session.duration / 3600).toFixed(1),
+        session.miles.toFixed(1),
+        getTimeOfDay(new Date(session.date)),
+        session.weather,
+        session.roadTypes.join(', '),
+        session.isNight ? 'Yes' : 'No'
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [38, 38, 180] },
+      styles: { fontSize: 9 },
+    });
+
+    doc.save('driving-log.pdf');
+  };
   
   if (loading || !user) {
     return (
@@ -34,7 +112,7 @@ export default function LogsPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8 flex justify-between items-center md:hidden">
+        <header className="mb-8 flex flex-col md:flex-row justify-between md:items-center">
             <div>
                  <div className="flex items-center gap-3 mb-2">
                     <DriveTrackIcon className="w-8 h-8 text-primary" />
@@ -46,6 +124,10 @@ export default function LogsPage() {
                     A complete record of all your driving sessions.
                 </p>
             </div>
+            <Button onClick={downloadPdf} className="mt-4 md:mt-0">
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+            </Button>
         </header>
         <div className="rounded-lg border">
             <SessionsLog sessions={sessions} />
