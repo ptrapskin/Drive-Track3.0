@@ -39,7 +39,7 @@ const manualLogSchema = z.object({
     required_error: "A date is required.",
   }),
   duration: z.coerce.number().min(1, "Duration must be at least 1 minute."),
-  miles: z.coerce.number().min(0.1, "Miles must be at least 0.1."),
+  miles: z.coerce.number().optional(),
   weather: z.enum(["Sunny", "Cloudy", "Rainy", "Snowy"], {
       required_error: "Weather condition is required."
   }),
@@ -72,6 +72,7 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
   function onSubmit(data: ManualLogFormValues) {
     const newSession = {
         ...data,
+        miles: data.miles || 0,
         duration: data.duration * 60, // Convert minutes to seconds
         date: data.date.toISOString(),
         roadTypes: data.roadTypes as RoadType[],
@@ -125,7 +126,7 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
                         name="miles"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Miles Driven</FormLabel>
+                            <FormLabel>Miles Driven (optional)</FormLabel>
                             <FormControl>
                                 <Input type="number" placeholder="e.g. 25" {...field} />
                             </FormControl>
