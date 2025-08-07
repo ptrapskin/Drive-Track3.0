@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
 import MainNav from '@/components/main-nav';
+import { SessionsProvider } from '@/context/sessions-context';
 
 export const metadata: Metadata = {
   title: 'Drive-Track',
@@ -23,6 +24,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
+          <SessionsProvider>
             <div className="md:flex">
               <MainNav />
               <main className="flex-1 md:ml-64 lg:ml-72">
@@ -31,6 +33,7 @@ export default function RootLayout({
                   </div>
               </main>
             </div>
+          </SessionsProvider>
         </AuthProvider>
         <Toaster />
       </body>

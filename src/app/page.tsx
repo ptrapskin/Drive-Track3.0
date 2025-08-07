@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { initialSessions } from '@/lib/data';
+import { useEffect } from 'react';
 import type { Session } from '@/lib/types';
 import Dashboard from '@/components/dashboard';
-import Tracker from '@/components/tracker';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
@@ -19,9 +17,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
+import { useSessions } from '@/context/sessions-context';
 
 export default function Home() {
-  const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const { sessions } = useSessions();
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
@@ -31,15 +30,6 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
-  const addSession = (newSession: Omit<Session, 'id' | 'date'>) => {
-    const sessionWithId: Session = {
-      ...newSession,
-      id: new Date().getTime().toString(),
-      date: new Date().toISOString(),
-    };
-    setSessions(prevSessions => [sessionWithId, ...prevSessions]);
-  };
-  
   if (loading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -88,14 +78,8 @@ export default function Home() {
           </DropdownMenu>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-2">
-            <Tracker onSaveSession={addSession} />
-          </div>
-          <div className="lg:col-span-3">
-            <Dashboard sessions={sessions} />
-          </div>
-        </div>
+        <Dashboard sessions={sessions} />
+
       </div>
     </main>
   );

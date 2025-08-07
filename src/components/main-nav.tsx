@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, BookOpen, User as UserIcon, LogOut } from 'lucide-react';
+import { Home, BookOpen, User as UserIcon, LogOut, Hourglass } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
@@ -14,6 +14,7 @@ export default function MainNav() {
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/track', label: 'Track', icon: Hourglass },
     { href: '/reports/logs', label: 'Logs', icon: BookOpen },
     { href: '/profile', label: 'Profile', icon: UserIcon },
   ];
@@ -31,7 +32,7 @@ export default function MainNav() {
     <>
       {/* Mobile Footer */}
       <footer className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t print:hidden md:hidden">
-        <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+        <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
           {navItems.map((item) => (
             <Link
               key={item.href}

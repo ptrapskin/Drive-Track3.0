@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import { initialSessions } from '@/lib/data';
 import type { Session } from '@/lib/types';
 import SessionsLog from '@/components/sessions-log';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
 import DriveTrackIcon from '@/components/drive-track-icon';
+import { useSessions } from '@/context/sessions-context';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
@@ -28,7 +28,7 @@ const getTimeOfDay = (date: Date) => {
 };
 
 export default function LogsPage() {
-  const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const { sessions } = useSessions();
   const { user, loading } = useAuth();
   const router = useRouter();
 
