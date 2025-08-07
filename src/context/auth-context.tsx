@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -39,7 +40,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const logout = async () => {
     await signOut(auth);
-    setUser(null);
   };
 
   return (

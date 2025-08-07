@@ -8,13 +8,15 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
 import { Button } from './ui/button';
 import DriveTrackLogo from './drive-track-logo';
+import { useRouter } from 'next/navigation';
 
 export default function MainNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/track', label: 'Track', icon: Hourglass },
     { href: '/reports/logs', label: 'Logs', icon: BookOpen },
     { href: '/skills', label: 'Skills', icon: Award },
@@ -25,8 +27,9 @@ export default function MainNav() {
     return null;
   }
   
-  // Hide on auth pages
-  if (pathname === '/login' || pathname === '/signup') {
+  // Hide on auth pages and landing page
+  const hiddenPaths = ['/login', '/signup', '/'];
+  if (hiddenPaths.includes(pathname)) {
     return null;
   }
 
@@ -88,7 +91,10 @@ export default function MainNav() {
                            <p className="text-xs text-muted-foreground">Student Driver</p>
                        </div>
                   </div>
-                  <Button variant="outline" className="w-full" onClick={logout}>
+                  <Button variant="outline" className="w-full" onClick={async () => {
+                      await logout();
+                      router.push('/login');
+                  }}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
                   </Button>

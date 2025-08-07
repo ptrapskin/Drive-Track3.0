@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, signInWithGoogle } from '@/firebase';
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import DriveTrackLogo from '@/components/drive-track-logo';
+import { useAuth } from '@/context/auth-context';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" {...props}>
@@ -26,12 +28,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -44,7 +54,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -54,16 +64,24 @@ export default function LoginPage() {
     }
   };
 
+  if (loading || user) {
+      return (
+        <div className="flex justify-center items-center min-h-screen">
+            <div className="text-2xl">Loading...</div>
+        </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex items-center justify-center min-h-screen bg-muted/40">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-3 mb-2">
+            <Link href="/" className="flex justify-center items-center gap-3 mb-2">
                 <DriveTrackLogo />
                 <CardTitle className="text-4xl font-bold font-headline tracking-tight text-primary">
                 Drive-Track
                 </CardTitle>
-            </div>
+            </Link>
             <CardDescription>Login to your account</CardDescription>
         </CardHeader>
         <CardContent>
