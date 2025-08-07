@@ -15,3 +15,10 @@ export interface User {
   uid: string;
   email: string | null;
 }
+
+export interface Skill {
+  id: number;
+  title: string;
+  teachingPoints: string[];
+  completed: boolean;
+}

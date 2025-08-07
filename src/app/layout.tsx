@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
 import MainNav from '@/components/main-nav';
 import { SessionsProvider } from '@/context/sessions-context';
+import { SkillsProvider } from '@/context/skills-context';
 
 export const metadata: Metadata = {
   title: 'Drive-Track',
@@ -25,14 +26,16 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <SessionsProvider>
-            <div className="md:flex">
-              <MainNav />
-              <main className="flex-1 md:ml-64 lg:ml-72">
-                  <div className="pb-16 md:pb-0">
-                      {children}
-                  </div>
-              </main>
-            </div>
+            <SkillsProvider>
+              <div className="md:flex">
+                <MainNav />
+                <main className="flex-1 md:ml-64 lg:ml-72">
+                    <div className="pb-16 md:pb-0">
+                        {children}
+                    </div>
+                </main>
+              </div>
+            </SkillsProvider>
           </SessionsProvider>
         </AuthProvider>
         <Toaster />
