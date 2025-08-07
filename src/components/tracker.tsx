@@ -1,13 +1,14 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gauge, Play, StopCircle, CloudSun, Milestone, Hourglass, Clock } from "lucide-react";
 import type { Session, RoadType, WeatherCondition, TimeOfDay } from "@/lib/types";
 import SaveSessionDialog from "./save-session-dialog";
 import { TimeOfDayIcon } from "./sessions-log";
+import { haversineDistance } from "@/lib/geolocation";
 
 interface TrackerProps {
   onSaveSession: (session: Omit<Session, "id" | "date">) => void;
@@ -44,32 +45,71 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const [sessionWeather, setSessionWeather] = useState<WeatherCondition>("Sunny");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Afternoon");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentSpeed, setCurrentSpeed] = useState(0);
+  
+  const watchIdRef = useRef<number | null>(null);
+  const lastPositionRef = useRef<GeolocationCoordinates | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (status === "tracking") {
-      interval = setInterval(() => {
-        setElapsedSeconds((prev) => prev + 1);
+        // Start timer
+        timerIntervalRef.current = setInterval(() => {
+            setElapsedSeconds((prev) => prev + 1);
+        }, 1000);
 
-        // Simulate driving
-        const randomSpeed = Math.random() * 80; // 0 to 80 mph
-        const milesPerSecond = randomSpeed / 3600;
-        setMiles((prev) => prev + milesPerSecond);
+        // Start GPS tracking
+        if (navigator.geolocation) {
+            watchIdRef.current = navigator.geolocation.watchPosition(
+                (position) => {
+                    const { coords } = position;
+                    if (lastPositionRef.current) {
+                        const distance = haversineDistance(lastPositionRef.current, coords);
+                        setMiles((prevMiles) => prevMiles + distance);
+                    }
+                    lastPositionRef.current = coords;
+                    setCurrentSpeed(coords.speed ? coords.speed * 2.23694 : 0); // m/s to mph
 
-        let roadType: RoadType;
-        if (randomSpeed < 30) {
-          roadType = "Residential";
-        } else if (randomSpeed < 55) {
-          roadType = "Arterial";
+                    let roadType: RoadType;
+                    const speedMph = coords.speed ? coords.speed * 2.23694 : 0;
+                    if (speedMph < 30) {
+                        roadType = "Residential";
+                    } else if (speedMph < 55) {
+                        roadType = "Arterial";
+                    } else {
+                        roadType = "Highway";
+                    }
+                    setCurrentRoadType(roadType);
+                    setSessionRoadTypes((prev) => new Set(prev).add(roadType));
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    alert("Geolocation is not available or permission was denied. Mileage will not be tracked.");
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
         } else {
-          roadType = "Highway";
+            alert("Geolocation is not supported by this browser.");
         }
-        setCurrentRoadType(roadType);
-        setSessionRoadTypes((prev) => new Set(prev).add(roadType));
-      }, 1000);
+    } else {
+        // Clear timers and watchers
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+        }
+        if (watchIdRef.current) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+        }
+        lastPositionRef.current = null;
     }
-    return () => clearInterval(interval);
+
+    return () => {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
   }, [status]);
+
 
   const handleStart = () => {
     setTimeOfDay(getTimeOfDay());
@@ -89,6 +129,10 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     setMiles(0);
     setCurrentRoadType("Residential");
     setSessionRoadTypes(new Set());
+    setCurrentSpeed(0);
+    if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    if(watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+    lastPositionRef.current = null;
   }, []);
 
   const handleSave = useCallback(

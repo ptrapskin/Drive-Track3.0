@@ -34,7 +34,7 @@ export default function LandingPage() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-primary">
-                    The Smart Way to Log Your Driving Hours
+                    The Simple Way to Log Your Driving Hours
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Drive-Track makes it simple for student drivers to log practice hours, learn essential skills, and generate reports for the DMV.
@@ -43,7 +43,7 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button asChild size="lg">
                     <Link href="/signup">
-                      Start Tracking for Free
+                      Start Tracking Today
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </Button>
@@ -68,7 +68,7 @@ export default function LandingPage() {
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need to Get Your License</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our app is packed with features designed to make the learning process seamless and stress-free for both students and parents.
+                  Our app is designed to make tracking and reporting hours easy while also providing a curriculum of skills for new drivers.
                 </p>
               </div>
             </div>
@@ -92,7 +92,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold">Skills Learning</h3>
                 <p className="text-sm text-muted-foreground">
-                    Work through a comprehensive list of 30 essential driving skills. Earn badges as you complete them and build your confidence.
+                    Work through a comprehensive list of 30 driving skills. Earn badges as you complete them and build your confidence.
                 </p>
               </div>
               <div className="grid gap-2 text-center">
@@ -103,7 +103,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold">Printable PDF Reports</h3>
                 <p className="text-sm text-muted-foreground">
-                    Generate a detailed driving log with one click. Perfect for submitting to the DMV or for insurance purposes.
+                    Generate a detailed driving log with one click. Perfect for submitting to the DMV.
                 </p>
               </div>
             </div>
@@ -157,12 +157,12 @@ export default function LandingPage() {
           <div className="container text-center">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Ready to Hit the Road?</h2>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed mt-4">
-              Take the guesswork out of learning to drive. Sign up now and start your journey towards getting your license with confidence.
+              Take the hassle out of logging hours. Sign up now and start your journey towards getting your license.
             </p>
             <div className="mt-6">
               <Button asChild size="lg">
                 <Link href="/signup">
-                  Sign Up for Free
+                  Sign Up Now
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
