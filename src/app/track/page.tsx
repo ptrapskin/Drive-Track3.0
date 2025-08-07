@@ -41,7 +41,7 @@ export default function TrackPage() {
                         </h1>
                         </div>
                         <p className="text-muted-foreground">
-                            Track a live session or enter a past one manually.
+                            Track a live session or enter one manually.
                         </p>
                     </div>
                 </header>
