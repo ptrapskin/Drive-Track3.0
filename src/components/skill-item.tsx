@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -36,7 +37,7 @@ export default function SkillItem({ skill }: SkillItemProps) {
         <div className="pl-10">
           <ul className="list-disc space-y-2 pl-5 mb-4">
             {skill.teachingPoints.map((point, index) => (
-              <li key={index} className="text-muted-foreground">
+              <li key={index} className="text-foreground/80">
                 {point}
               </li>
             ))}
