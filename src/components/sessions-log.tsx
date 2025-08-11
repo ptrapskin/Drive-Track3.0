@@ -109,7 +109,7 @@ export default function SessionsLog({ sessions, showViewAll = false }: SessionsL
                             <TimeOfDayIcon timeOfDay={session.timeOfDay} />
                         </div>
                     </TableCell>
-                    <TableCell className="flex justify-center items-center pt-4">
+                    <TableCell className="text-center">
                       <WeatherIcon weather={session.weather} />
                     </TableCell>
                     <TableCell>
