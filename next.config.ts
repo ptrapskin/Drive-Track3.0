@@ -1,22 +1,26 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Static export (replaces the old `next export` command)
+  output: 'export',
 
-import type {NextConfig} from 'next';
+  // Safer routing for static hosting / webview bundles
+  trailingSlash: true,
 
-const nextConfig: NextConfig = {
-  /* config options here */
+  // Skip type and lint errors during build (optional; remove if you want strict CI)
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+  // Next/Image tweaks for static export
   images: {
+    unoptimized: true,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
+      { protocol: 'https', hostname: '**' },
     ],
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
