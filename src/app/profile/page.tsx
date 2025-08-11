@@ -10,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, User as UserIcon, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Share2, Trash2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import DriveTrackIcon from '@/components/drive-track-icon';
+import DriveTrackLogo from '@/components/drive-track-logo';
 import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
@@ -84,7 +84,7 @@ export default function ProfilePage() {
         <header className="mb-8 flex justify-between items-center md:hidden">
              <div>
                  <div className="flex items-center gap-3 mb-2">
-                    <UserIcon className="w-8 h-8 text-primary" />
+                    <DriveTrackLogo />
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                         User Profile
                     </h1>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -9,6 +10,7 @@ import { Award, CheckCircle2 } from "lucide-react";
 import SkillItem from "@/components/skill-item";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import DriveTrackLogo from "@/components/drive-track-logo";
 
 export default function SkillsPage() {
   const { user, loading } = useAuth();
@@ -36,7 +38,7 @@ export default function SkillsPage() {
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Award className="w-8 h-8 text-primary" />
+            <DriveTrackLogo />
             <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
               Driving Skills
             </h1>

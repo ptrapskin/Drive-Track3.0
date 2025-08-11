@@ -13,6 +13,7 @@ import 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { useSessions } from '@/context/sessions-context';
+import DriveTrackLogo from '@/components/drive-track-logo';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
@@ -128,6 +129,7 @@ export default function LogsPage() {
         <header className="mb-8 flex flex-col md:flex-row justify-between md:items-center">
             <div>
                  <div className="flex items-center gap-3 mb-2">
+                    <DriveTrackLogo />
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                         Full Driving Log
                     </h1>
