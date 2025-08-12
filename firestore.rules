@@ -1,0 +1,30 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles: Users can only read and write their own profile.
+    match /profiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Sessions: Users can manage their own sessions subcollection.
+      match /sessions/{sessionId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Skills: Users can manage their own skills subcollection.
+      match /skills/{skillDocId} {
+         allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Shares: Allow users to create shares for their own UID and delete them.
+    // Guardians will need read access here, which we will add later.
+    match /shares/{shareId} {
+        allow read: if request.auth != null && (request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail);
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.studentUid;
+        allow delete: if request.auth != null && request.auth.uid == resource.data.studentUid;
+    }
+  }
+}
