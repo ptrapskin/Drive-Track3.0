@@ -72,18 +72,31 @@ export default function SaveSessionDialog({
   });
 
   useEffect(() => {
-    form.reset({
-      duration: session.duration,
-      miles: parseFloat(session.miles.toFixed(2)),
-      weather: session.weather,
-      timeOfDay: session.timeOfDay,
-    });
+    if (session) {
+        form.reset({
+            duration: session.duration,
+            miles: parseFloat(session.miles.toFixed(2)),
+            weather: session.weather,
+            timeOfDay: session.timeOfDay,
+        });
+    }
   }, [session, form]);
   
   const onSubmit = (data: z.infer<typeof sessionSchema>) => {
     onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay, date: new Date().toISOString() });
     setIsEditing(false);
+    onOpenChange(false);
   };
+
+  const handleDiscardClick = () => {
+    onDiscard();
+    onOpenChange(false);
+  }
+  
+  const handleResumeClick = () => {
+    onResume();
+    onOpenChange(false);
+  }
 
   if (!isOpen) {
       return null;
@@ -163,7 +176,7 @@ export default function SaveSessionDialog({
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select time of day" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Morning">Morning</SelectItem>
@@ -185,18 +198,18 @@ export default function SaveSessionDialog({
 
             </div>
 
-            <DialogFooter className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditing(!isEditing)} className="col-span-1">
+            <DialogFooter className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:justify-start">
+              <Button type="button" variant="outline" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? <Check className="mr-2 h-4 w-4"/> : <Edit className="mr-2 h-4 w-4" />}
                 {isEditing ? "Done" : "Edit"}
               </Button>
-              <Button type="button" variant="destructive" onClick={onDiscard} className="col-span-1">
+              <Button type="button" variant="destructive" onClick={handleDiscardClick}>
                 <Trash2 className="mr-2 h-4 w-4" /> Discard
               </Button>
-              <Button type="button" onClick={onResume} className="col-span-1">
+              <Button type="button" onClick={handleResumeClick}>
                 <Play className="mr-2 h-4 w-4" /> Resume
               </Button>
-              <Button type="submit" className="col-span-1">
+              <Button type="submit">
                 <Save className="mr-2 h-4 w-4" /> Save
               </Button>
             </DialogFooter>
