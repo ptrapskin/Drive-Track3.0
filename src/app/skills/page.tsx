@@ -1,12 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useSkills } from "@/context/skills-context";
 import { Accordion } from "@/components/ui/accordion";
-import { Award, CheckCircle2 } from "lucide-react";
 import SkillItem from "@/components/skill-item";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,11 +13,12 @@ import DashboardHeader from "@/components/dashboard-header";
 import { initialSkills } from "@/lib/skills-data";
 import { db } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { Button } from "@/components/ui/button";
 
 export default function SkillsPage() {
   const { user, loading, logout, activeProfileEmail, isViewingSharedAccount, activeProfileUid } = useAuth();
   const router = useRouter();
-  const { skills, completedSkillsCount, loading: skillsLoading } = useSkills();
+  const { skills, completedSkillsCount, loading: skillsLoading, refetchSkills } = useSkills();
   
   const totalSkills = initialSkills.length;
   const progressPercentage = totalSkills > 0 ? (completedSkillsCount / totalSkills) * 100 : 0;
@@ -40,10 +40,12 @@ export default function SkillsPage() {
       const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
       const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
       await setDoc(docRef, { skills: newSkills });
+      refetchSkills();
     } catch (error) {
       console.error("Failed to initialize skills:", error);
     }
   };
+
 
   const pageLoading = loading || skillsLoading;
 
@@ -98,9 +100,15 @@ export default function SkillsPage() {
             <Card>
                 <CardContent className="pt-6 text-center">
                     <p className="mb-4">You haven't started tracking your skills yet.</p>
-                    <button onClick={initializeSkills} className="bg-primary text-primary-foreground px-4 py-2 rounded-md">
+                    <Button onClick={initializeSkills}>
                       Initialize Skills List
-                    </button>
+                    </Button>
+                </CardContent>
+            </Card>
+        ) : skills.length === 0 && isViewingSharedAccount ? (
+            <Card>
+                <CardContent className="pt-6 text-center">
+                    <p className="mb-4 text-muted-foreground">This user has not initialized their skills list.</p>
                 </CardContent>
             </Card>
         ) : (

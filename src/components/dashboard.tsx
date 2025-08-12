@@ -26,6 +26,9 @@ export default function Dashboard({ sessions }: DashboardProps) {
   const hasGoals = !!(totalHoursGoal && nightHoursGoal && totalHoursGoal > 0 && nightHoursGoal > 0);
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
+    if (!sessions || sessions.length === 0) {
+      return { totalHours: 0, totalMiles: 0, nightHours: 0 };
+    }
     const totals = sessions.reduce(
       (acc, session) => {
         acc.totalDuration += session.duration;
@@ -139,7 +142,11 @@ export default function Dashboard({ sessions }: DashboardProps) {
                 </Button>
             </CardHeader>
             <CardContent>
-                <SessionsLog sessions={sessions} showViewAll={false} />
+                {sessions && sessions.length > 0 ? (
+                    <SessionsLog sessions={sessions} showViewAll={false} />
+                ) : (
+                    <p className="text-muted-foreground">No driving sessions logged yet.</p>
+                )}
             </CardContent>
             </Card>
         </section>

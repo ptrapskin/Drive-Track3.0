@@ -14,6 +14,7 @@ interface SkillsContextType {
   toggleSkillCompletion: (skillId: number) => void;
   completedSkillsCount: number;
   loading: boolean;
+  refetchSkills: () => void;
 }
 
 const SkillsContext = createContext<SkillsContextType>({
@@ -21,6 +22,7 @@ const SkillsContext = createContext<SkillsContextType>({
   toggleSkillCompletion: () => {},
   completedSkillsCount: 0,
   loading: true,
+  refetchSkills: () => {},
 });
 
 export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
@@ -38,17 +40,23 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
 
     setLoading(true);
     const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
-    const docSnap = await getDoc(docRef);
+    try {
+        const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        const skillsData = docSnap.data().skills as Skill[];
-        setSkills(skillsData);
-    } else {
-        // If no skills doc exists, start with an empty array.
-        // Skills will be created on-demand if the user visits the skills page.
-        setSkills([]);
+        if (docSnap.exists()) {
+            const skillsData = docSnap.data().skills as Skill[];
+            setSkills(skillsData);
+        } else {
+            // If no skills doc exists, start with an empty array.
+            // Skills will be created on-demand if the user visits the skills page.
+            setSkills([]);
+        }
+    } catch (error) {
+        console.error("Error fetching skills: ", error);
+        setSkills([]); // Reset on error
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   }, [activeProfileUid]);
 
   useEffect(() => {
@@ -76,11 +84,10 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
   const completedSkillsCount = skills.filter(skill => skill.completed).length;
 
   return (
-    <SkillsContext.Provider value={{ skills, toggleSkillCompletion, completedSkillsCount, loading }}>
+    <SkillsContext.Provider value={{ skills, toggleSkillCompletion, completedSkillsCount, loading, refetchSkills: fetchSkills }}>
       {children}
     </SkillsContext.Provider>
   );
 };
 
 export const useSkills = () => useContext(SkillsContext);
-
