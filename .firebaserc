@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "drive-track-7027f"
-  }
+    "default": "drive-track-7027f",
+    "staging": "drive-track-7027f"
+  },
+  "targets": {},
+  "etags": {}
 }
