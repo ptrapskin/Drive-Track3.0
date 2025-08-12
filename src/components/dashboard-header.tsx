@@ -22,7 +22,7 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({ userEmail, onLogout }: DashboardHeaderProps) {
   
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6 mb-8">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6 mb-4">
        <div className="flex items-center gap-3">
             <DriveTrackLogo />
             <h1 className="text-2xl font-bold font-headline tracking-tight text-primary">
