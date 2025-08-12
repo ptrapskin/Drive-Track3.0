@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,12 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, auth, functions } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { Mail, Share2 } from 'lucide-react';
-import { getAuth } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -106,18 +105,17 @@ export default function ProfilePage() {
     if (!user || !guardianEmail || !profile) return;
     
     try {
-        // This is a placeholder for a cloud function that would get the guardian's UID from their email
-        // For now, we assume the guardian has to sign up first, and we can't get their UID directly.
-        // The rules are now structured around the guardian's UID, not their email.
-        // This functionality needs a backend component (Cloud Function) to be fully secure and robust.
-        // The current implementation is a placeholder to demonstrate the UI flow.
-        
-        toast({
-            title: "Sharing Logic Update Required",
-            description: "A backend function is needed to securely look up guardian UID by email. This is a UI placeholder.",
-            variant: "destructive"
-        });
+        const inviteGuardian = httpsCallable(functions, 'inviteGuardian');
+        const result: any = await inviteGuardian({ guardianEmail });
 
+        if (result.data.success) {
+            toast({
+                title: "Account Shared",
+                description: "Your guardian can now log in to view your progress.",
+            });
+        } else {
+             throw new Error(result.data.error || "Failed to share account.");
+        }
     } catch (error: any) {
          toast({
             variant: "destructive",
@@ -248,7 +246,6 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                     </form>
-                    <p className="text-xs text-muted-foreground mt-2">Note: For this to work, a backend function is required to look up a guardian's User ID from their email. The current implementation is a placeholder.</p>
                 </CardContent>
             </Card>
 
@@ -292,4 +289,4 @@ export default function ProfilePage() {
     </main>
   );
 }
-
+    

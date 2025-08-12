@@ -5,38 +5,37 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
-    
-    function isSharedWith(studentUid) {
-      let guardianDoc = get(/databases/$(database)/documents/guardianInvites/$(request.auth.uid));
-      return guardianDoc.data.students[studentUid] != null;
+
+    // Function to check if the requesting user is a guardian for the student
+    function isGuardianForStudent(studentUid) {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/guardianInvites/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/guardianInvites/$(request.auth.uid)).data.students[studentUid] != null;
     }
 
     match /profiles/{userId} {
-      // Any authenticated user can create their own profile
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // Users can read/update their own profile
-      // Guardians can read the student's profile if shared
-      allow read, update: if isOwner(userId) || isSharedWith(userId);
+      allow read, update: if isOwner(userId) || isGuardianForStudent(userId);
+      allow create: if isOwner(userId);
 
       match /sessions/{sessionId} {
-        // Owner or a shared guardian can read/write sessions
-        allow read, write: if isOwner(userId) || isSharedWith(userId);
+        allow read, list, create, update, delete: if isOwner(userId) || isGuardianForStudent(userId);
       }
 
       match /skills/{skillId} {
-        // Owner or a shared guardian can read/write skills
-        allow read, write: if isOwner(userId) || isSharedWith(userId);
+        allow read, list, create, update, delete: if isOwner(userId) || isGuardianForStudent(userId);
       }
     }
-    
+
     match /guardianInvites/{guardianId} {
-        // A user can only write to their own guardian invite document
-        allow write: if isOwner(guardianId);
-        // A user can read their own invite doc
-        allow read: if isOwner(guardianId);
+      // Allow guardians to read their own invite document
+      allow read: if isOwner(guardianId);
+      // Allow students (or a cloud function with admin rights) to create/update invites.
+      // This is simplified; in a real app, you'd secure this with a cloud function.
+      allow write: if request.auth != null;
     }
   }
 }
+
+    

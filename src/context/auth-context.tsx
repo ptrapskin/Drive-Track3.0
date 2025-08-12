@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
 import type { User, UserProfile, Share, GuardianInvite } from '@/lib/types';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -139,7 +139,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const activeStudentName = isViewingSharedAccount ? shares.find(s => s.studentUid === activeProfileUid)?.studentName || null : null;
   
   const handleSetActiveProfileUid = (uid: string | null) => {
-    setActiveProfileUid(uid);
+    if (uid === user?.uid) {
+      setActiveProfileUid(user.uid);
+    } else {
+      setActiveProfileUid(uid);
+    }
   };
 
 
@@ -151,3 +155,5 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+    
