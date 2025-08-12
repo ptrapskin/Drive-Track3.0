@@ -16,7 +16,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 
 export default function SkillsPage() {
-  const { user, loading, logout, activeProfileEmail, isViewingSharedAccount, activeProfileUid } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { skills, completedSkillsCount, loading: skillsLoading, refetchSkills } = useSkills();
   
@@ -35,17 +35,16 @@ export default function SkillsPage() {
   };
 
   const initializeSkills = async () => {
-    if (!activeProfileUid || isViewingSharedAccount) return;
+    if (!user) return;
     try {
       const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
-      const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+      const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
       await setDoc(docRef, { skills: newSkills });
       refetchSkills();
     } catch (error) {
       console.error("Failed to initialize skills:", error);
     }
   };
-
 
   const pageLoading = loading || skillsLoading;
 
@@ -60,9 +59,8 @@ export default function SkillsPage() {
   return (
     <main className="min-h-screen">
        <DashboardHeader 
-        userEmail={activeProfileEmail || user.email}
+        userEmail={user.email}
         onLogout={handleLogout}
-        isViewingSharedAccount={isViewingSharedAccount}
        />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8 md:hidden">
@@ -76,16 +74,6 @@ export default function SkillsPage() {
           </p>
         </header>
 
-        {isViewingSharedAccount && (
-            <Card className="mb-8 bg-destructive/10 border-destructive">
-                <CardContent className="p-4">
-                    <p className="font-medium text-center text-destructive-foreground">
-                        You are viewing another user's skills. Editing is disabled.
-                    </p>
-                </CardContent>
-            </Card>
-        )}
-        
         <Card className="mb-8">
             <CardHeader>
                 <CardTitle>Your Progress</CardTitle>
@@ -96,19 +84,13 @@ export default function SkillsPage() {
             </CardContent>
         </Card>
 
-        {skills.length === 0 && !isViewingSharedAccount ? (
+        {skills.length === 0 ? (
             <Card>
                 <CardContent className="pt-6 text-center">
                     <p className="mb-4">You haven't started tracking your skills yet.</p>
                     <Button onClick={initializeSkills}>
                       Initialize Skills List
                     </Button>
-                </CardContent>
-            </Card>
-        ) : skills.length === 0 && isViewingSharedAccount ? (
-            <Card>
-                <CardContent className="pt-6 text-center">
-                    <p className="mb-4 text-muted-foreground">This user has not initialized their skills list.</p>
                 </CardContent>
             </Card>
         ) : (

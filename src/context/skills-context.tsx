@@ -3,7 +3,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Skill } from '@/lib/types';
-import { initialSkills as skillsTemplate } from '@/lib/skills-data';
 import { useAuth } from './auth-context';
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -26,20 +25,20 @@ const SkillsContext = createContext<SkillsContextType>({
 });
 
 export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { activeProfileUid, isViewingSharedAccount } = useAuth();
+  const { user } = useAuth();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSkills = useCallback(async () => {
-    if (!activeProfileUid) {
+    if (!user) {
         setSkills([]);
         setLoading(false);
         return;
     };
 
     setLoading(true);
-    const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+    const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
     try {
         const docSnap = await getDoc(docRef);
 
@@ -47,24 +46,22 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
             const skillsData = docSnap.data().skills as Skill[];
             setSkills(skillsData);
         } else {
-            // If no skills doc exists, start with an empty array.
-            // Skills will be created on-demand if the user visits the skills page.
             setSkills([]);
         }
     } catch (error) {
         console.error("Error fetching skills: ", error);
-        setSkills([]); // Reset on error
+        setSkills([]);
     } finally {
         setLoading(false);
     }
-  }, [activeProfileUid]);
+  }, [user]);
 
   useEffect(() => {
     fetchSkills();
   }, [fetchSkills]);
 
   const toggleSkillCompletion = async (skillId: number) => {
-    if (!activeProfileUid || isViewingSharedAccount) return;
+    if (!user) return;
     
     const newSkills = skills.map(skill =>
         skill.id === skillId ? { ...skill, completed: !skill.completed } : skill
@@ -72,10 +69,9 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     setSkills(newSkills);
 
     try {
-        const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+        const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
         await setDoc(docRef, { skills: newSkills });
     } catch (error: any) {
-        // Revert UI change on error
         setSkills(skills);
         toast({ variant: 'destructive', title: 'Error updating skill', description: error.message });
     }

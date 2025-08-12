@@ -10,7 +10,7 @@ import DashboardHeader from '@/components/dashboard-header';
 
 export default function DashboardPage() {
   const { sessions, loading: sessionsLoading } = useSessions();
-  const { user, loading: authLoading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -37,9 +37,8 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen">
        <DashboardHeader 
-        userEmail={activeProfileEmail || user.email}
+        userEmail={user.email}
         onLogout={handleLogout}
-        isViewingSharedAccount={isViewingSharedAccount}
        />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <Dashboard sessions={sessions} />

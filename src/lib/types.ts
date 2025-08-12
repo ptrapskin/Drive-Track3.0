@@ -34,10 +34,3 @@ export interface Skill {
   teachingPoints: string[];
   completed: boolean;
 }
-
-export interface Share {
-  id: string;
-  studentUid: string;
-  studentEmail: string;
-  guardianEmail: string;
-}

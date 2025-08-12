@@ -11,10 +11,9 @@ import ManualLogForm from "@/components/manual-log-form";
 import { Gauge, PencilLine } from "lucide-react";
 import DashboardHeader from "@/components/dashboard-header";
 
-
 export default function TrackPage() {
     const { addSession } = useSessions();
-    const { user, loading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
+    const { user, loading, logout } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -39,9 +38,8 @@ export default function TrackPage() {
     return (
         <main className="min-h-screen">
             <DashboardHeader 
-                userEmail={activeProfileEmail || user.email}
+                userEmail={user.email}
                 onLogout={handleLogout}
-                isViewingSharedAccount={isViewingSharedAccount}
             />
             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
                  <header className="mb-8 md:hidden">

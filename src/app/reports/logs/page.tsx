@@ -21,7 +21,7 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function LogsPage() {
   const { sessions, loading: sessionsLoading } = useSessions();
-  const { user, profile, loading: authLoading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
+  const { user, profile, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -74,11 +74,11 @@ export default function LogsPage() {
         startY: 48,
         head: [['Name', 'Date of Birth', 'Permit Issue Date', 'Total Goal (hrs)', 'Night Goal (hrs)']],
         body: [[
-            user?.email?.split('@')[0] || "Student Driver",
+            profile?.name || user?.email || "Student Driver",
             profile?.dateOfBirth ? format(new Date(profile.dateOfBirth), 'MMM d, yyyy') : 'N/A',
             profile?.permitDate ? format(new Date(profile.permitDate), 'MMM d, yyyy') : 'N/A',
-            profile?.totalHoursGoal || 50,
-            profile?.nightHoursGoal || 10
+            profile?.totalHoursGoal || 'N/A',
+            profile?.nightHoursGoal || 'N/A'
         ]],
         theme: 'grid',
         styles: { fontSize: 10 },
@@ -130,9 +130,8 @@ export default function LogsPage() {
   return (
     <main className="min-h-screen">
        <DashboardHeader 
-        userEmail={activeProfileEmail || user.email}
+        userEmail={user.email}
         onLogout={handleLogout}
-        isViewingSharedAccount={isViewingSharedAccount}
        />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8 flex flex-col md:flex-row justify-between md:items-center">

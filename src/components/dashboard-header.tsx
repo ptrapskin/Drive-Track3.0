@@ -17,10 +17,9 @@ import DriveTrackLogo from './drive-track-logo';
 interface DashboardHeaderProps {
   userEmail: string | null;
   onLogout: () => void;
-  isViewingSharedAccount: boolean;
 }
 
-export default function DashboardHeader({ userEmail, onLogout, isViewingSharedAccount }: DashboardHeaderProps) {
+export default function DashboardHeader({ userEmail, onLogout }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6 mb-8">
        <div className="flex items-center gap-3">
@@ -41,7 +40,7 @@ export default function DashboardHeader({ userEmail, onLogout, isViewingSharedAc
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild disabled={isViewingSharedAccount}>
+              <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <UserIcon className="mr-2 h-4 w-4" />
                   <span>Profile</span>

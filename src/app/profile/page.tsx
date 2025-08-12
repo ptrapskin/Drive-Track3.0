@@ -9,23 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Share2, Trash2, KeyRound } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
-import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { updatePassword } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
 
-interface Share {
-    id: string;
-    studentUid: string;
-    studentEmail: string;
-    guardianEmail: string;
-}
-
 export default function ProfilePage() {
-  const { user, loading, profile, isViewingSharedAccount, logout, activeProfileEmail, refetchProfile } = useAuth();
+  const { user, loading, profile, logout, refetchProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -35,20 +28,6 @@ export default function ProfilePage() {
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [shareEmail, setShareEmail] = useState('');
-  const [sharedWith, setSharedWith] = useState<Share[]>([]);
-
-  const fetchShares = useCallback(async () => {
-    if (!user) return;
-    const q = query(collection(db, "shares"), where("studentUid", "==", user.uid));
-    const querySnapshot = await getDocs(q);
-    const shares: Share[] = [];
-    querySnapshot.forEach((doc) => {
-        shares.push({ id: doc.id, ...doc.data() } as Share);
-    });
-    setSharedWith(shares);
-  }, [user]);
 
   useEffect(() => {
     if (profile) {
@@ -61,10 +40,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
-    } else if (user) {
-      fetchShares();
     }
-  }, [user, loading, router, fetchShares]);
+  }, [user, loading, router]);
 
   const handleLogout = async () => {
     await logout();
@@ -75,7 +52,6 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user || !currentProfile) return;
 
-    // Create a clean object for Firestore, converting undefined to null
     const profileToSave: Omit<UserProfile, 'id'> = {
         name: currentProfile.name || '',
         email: user.email,
@@ -128,51 +104,6 @@ export default function ProfilePage() {
       });
     }
   };
-  
-  const handleShare = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!shareEmail || !user || !user.email) return;
-    
-    const shareData = {
-        studentUid: user.uid,
-        studentEmail: user.email,
-        guardianEmail: shareEmail,
-        status: 'pending'
-    };
-
-    try {
-        const docRef = await addDoc(collection(db, "shares"), shareData);
-        setSharedWith([...sharedWith, { id: docRef.id, ...shareData }]);
-        setShareEmail('');
-        toast({
-          title: 'Account Shared',
-          description: `Invitation sent to ${shareEmail}. They will see it upon their next login.`,
-        });
-    } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Error Sharing Account",
-            description: error.message,
-        });
-    }
-  };
-
-  const handleRemoveShare = async (shareId: string) => {
-    try {
-        await deleteDoc(doc(db, "shares", shareId));
-        setSharedWith(sharedWith.filter((share) => share.id !== shareId));
-        toast({
-          title: 'Sharing Removed',
-          description: `Access has been revoked.`,
-        });
-    } catch(error: any) {
-        toast({
-            variant: "destructive",
-            title: "Error Removing Share",
-            description: error.message,
-        });
-    }
-  };
 
   if (loading || !user || !currentProfile) {
     return (
@@ -185,9 +116,8 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen">
         <DashboardHeader 
-            userEmail={activeProfileEmail || user.email}
+            userEmail={user.email}
             onLogout={handleLogout}
-            isViewingSharedAccount={isViewingSharedAccount}
         />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8 flex justify-between items-center md:hidden">
@@ -202,19 +132,9 @@ export default function ProfilePage() {
                 </p>
             </div>
         </header>
-        
-        {isViewingSharedAccount && (
-            <Card className="mb-8 bg-destructive/10 border-destructive">
-                <CardContent className="p-4">
-                    <p className="font-medium text-center text-destructive-foreground">
-                        You are viewing another user's profile. Editing is disabled.
-                    </p>
-                </CardContent>
-            </Card>
-        )}
 
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-8">
+        <div className="grid gap-8">
+          <div className="space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Your Information</CardTitle>
@@ -222,7 +142,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSave} className="space-y-6">
-                        <fieldset disabled={isViewingSharedAccount} className="space-y-6">
+                        <fieldset className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Full Name</Label>
@@ -289,7 +209,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleChangePassword} className="space-y-6">
-                         <fieldset disabled={isViewingSharedAccount} className="space-y-6">
+                         <fieldset className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="new-password">New Password</Label>
@@ -321,54 +241,6 @@ export default function ProfilePage() {
                     </form>
                 </CardContent>
              </Card>
-          </div>
-          <div className="md:col-span-1">
-            <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Share2 className="w-5 h-5"/>
-                    Share Account
-                  </CardTitle>
-                  <CardDescription>
-                    Grant access to a guardian or friend to view your logs and progress.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                 <fieldset disabled={isViewingSharedAccount}>
-                  <form onSubmit={handleShare} className="space-y-2">
-                    <Label htmlFor="share-email">Guardian/Friend Email</Label>
-                    <div className="flex gap-2">
-                        <Input
-                            id="share-email"
-                            type="email"
-                            value={shareEmail}
-                            onChange={(e) => setShareEmail(e.target.value)}
-                            placeholder="name@example.com"
-                            required
-                        />
-                        <Button type="submit" variant="outline">Share</Button>
-                    </div>
-                  </form>
-                  <div className="space-y-4">
-                      <Label>Currently Sharing With</Label>
-                      {sharedWith.length > 0 ? (
-                        <ul className="space-y-2">
-                          {sharedWith.map((share) => (
-                            <li key={share.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted">
-                              <span>{share.guardianEmail}</span>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveShare(share.id)}>
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">You are not sharing your account with anyone.</p>
-                      )}
-                  </div>
-                  </fieldset>
-                </CardContent>
-            </Card>
           </div>
         </div>
       </div>
