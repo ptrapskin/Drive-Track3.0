@@ -9,12 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, auth } from '@/firebase';
-import { updatePassword } from 'firebase/auth';
+import { db } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 export default function ProfilePage() {
@@ -26,9 +24,6 @@ export default function ProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
   
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
   useEffect(() => {
     if (profile) {
       setCurrentProfile(profile);
@@ -74,34 +69,6 @@ export default function ProfilePage() {
             title: "Error Saving Profile",
             description: error.message,
         });
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Passwords do not match',
-        description: 'Please re-enter your new password.',
-      });
-      return;
-    }
-    if (!auth.currentUser) return;
-    try {
-      await updatePassword(auth.currentUser, newPassword);
-      setNewPassword('');
-      setConfirmPassword('');
-      toast({
-        title: 'Password Updated',
-        description: 'Your password has been changed successfully.',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error Changing Password',
-        description: error.message,
-      });
     }
   };
 
@@ -177,7 +144,7 @@ export default function ProfilePage() {
                                         id="total-hours-goal"
                                         type="number"
                                         value={currentProfile.totalHoursGoal || ''}
-                                        onChange={(e) => setCurrentProfile({...currentProfile, totalHoursGoal: Number(e.target.value)})}
+                                        onChange={(e) => setCurrentProfile({...currentProfile, totalHoursGoal: e.target.value ? Number(e.target.value) : null})}
                                         placeholder="e.g. 50"
                                     />
                                 </div>
@@ -187,7 +154,7 @@ export default function ProfilePage() {
                                         id="night-hours-goal"
                                         type="number"
                                         value={currentProfile.nightHoursGoal || ''}
-                                        onChange={(e) => setCurrentProfile({...currentProfile, nightHoursGoal: Number(e.target.value)})}
+                                        onChange={(e) => setCurrentProfile({...currentProfile, nightHoursGoal: e.target.value ? Number(e.target.value) : null})}
                                         placeholder="e.g. 10"
                                     />
                                 </div>
@@ -199,48 +166,6 @@ export default function ProfilePage() {
                     </form>
                 </CardContent>
             </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <KeyRound className="w-5 h-5"/>
-                        Security
-                    </CardTitle>
-                    <CardDescription>Update your password.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleChangePassword} className="space-y-6">
-                         <fieldset className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-password">New Password</Label>
-                                    <Input
-                                        id="new-password"
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="Enter new password"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                    <Input
-                                        id="confirm-password"
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Confirm new password"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end">
-                                <Button type="submit">Change Password</Button>
-                            </div>
-                        </fieldset>
-                    </form>
-                </CardContent>
-             </Card>
           </div>
         </div>
       </div>
