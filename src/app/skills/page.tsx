@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect } from "react";
@@ -14,9 +15,10 @@ import { initialSkills } from "@/lib/skills-data";
 import { db } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
+import { Users } from "lucide-react";
 
 export default function SkillsPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, activeProfileUid, loading, logout, shares, isViewingSharedAccount } = useAuth();
   const router = useRouter();
   const { skills, completedSkillsCount, loading: skillsLoading, refetchSkills } = useSkills();
   
@@ -35,10 +37,10 @@ export default function SkillsPage() {
   };
 
   const initializeSkills = async () => {
-    if (!user) return;
+    if (!activeProfileUid) return;
     try {
       const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
-      const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
+      const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
       await setDoc(docRef, { skills: newSkills });
       refetchSkills();
     } catch (error) {
@@ -54,6 +56,30 @@ export default function SkillsPage() {
         <div className="text-2xl">Loading...</div>
       </div>
     );
+  }
+
+  if (shares.length > 0 && !isViewingSharedAccount) {
+    return (
+         <main className="min-h-screen">
+            <DashboardHeader 
+                userEmail={user.email}
+                onLogout={handleLogout}
+            />
+            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+                 <Card className="mt-8 text-center">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-3">
+                            <Users className="w-8 h-8 text-primary" />
+                            Select a Student
+                        </CardTitle>
+                        <CardDescription>
+                            To view skills, please first select a student from the account dropdown menu above.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        </main>
+    )
   }
 
   return (

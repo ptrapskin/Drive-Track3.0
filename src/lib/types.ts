@@ -1,4 +1,5 @@
 
+
 export type RoadType = "Residential" | "Arterial" | "Highway";
 export type WeatherCondition = "Sunny" | "Cloudy" | "Rainy" | "Snowy";
 export type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
@@ -33,4 +34,14 @@ export interface Skill {
   title: string;
   teachingPoints: string[];
   completed: boolean;
+}
+
+export interface Share {
+    id: string;
+    studentUid: string;
+    studentEmail: string;
+    studentName: string;
+    guardianEmail: string;
+    status: 'pending' | 'accepted';
+    createdAt: any; // Firestore timestamp
 }

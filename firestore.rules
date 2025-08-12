@@ -3,8 +3,26 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /profiles/{userId}/{documents=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+  
+    // Profiles can be created by any authenticated user for their own UID.
+    // Users can only read or update their own profile.
+    match /profiles/{userId} {
+      allow read, update: if request.auth.uid == userId;
+      allow create: if request.auth.uid == userId;
+
+      // Users can read/write to their own sessions and skills subcollections.
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth.uid == userId;
+      }
+    }
+    
+    // Sharing Rules:
+    // A user can create a 'share' doc if they are the student (studentUid matches their own uid).
+    // A student can read shares they created.
+    // A guardian can read shares where their email is the guardianEmail.
+    match /shares/{shareId} {
+      allow create: if request.auth.uid == request.resource.data.studentUid;
+      allow read: if request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail;
     }
   }
 }

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -25,20 +26,20 @@ const SessionsContext = createContext<SessionsContextType>({
 });
 
 export const SessionsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { activeProfileUid } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSessions = useCallback(async () => {
-    if (!user) {
+    if (!activeProfileUid) {
         setSessions([]);
         setLoading(false);
         return;
     };
     try {
         setLoading(true);
-        const sessionsCollection = collection(db, 'profiles', user.uid, 'sessions');
+        const sessionsCollection = collection(db, 'profiles', activeProfileUid, 'sessions');
         const q = query(sessionsCollection, orderBy('date', 'desc'));
         const querySnapshot = await getDocs(q);
         const sessionsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session));
@@ -48,16 +49,16 @@ export const SessionsProvider = ({ children }: { children: React.ReactNode }) =>
     } finally {
         setLoading(false);
     }
-  }, [user, toast]);
+  }, [activeProfileUid, toast]);
 
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
   
   const addSession = async (newSession: Omit<Session, 'id'>) => {
-    if (!user) return;
+    if (!activeProfileUid) return;
     try {
-        const docRef = await addDoc(collection(db, 'profiles', user.uid, 'sessions'), newSession);
+        const docRef = await addDoc(collection(db, 'profiles', activeProfileUid, 'sessions'), newSession);
         const sessionWithId: Session = { ...newSession, id: docRef.id };
         setSessions(prevSessions => [sessionWithId, ...prevSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     } catch (error: any) {
@@ -66,9 +67,9 @@ export const SessionsProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   const updateSession = async (updatedSession: Session) => {
-    if (!user) return;
+    if (!activeProfileUid) return;
     try {
-        const sessionRef = doc(db, 'profiles', user.uid, 'sessions', updatedSession.id);
+        const sessionRef = doc(db, 'profiles', activeProfileUid, 'sessions', updatedSession.id);
         const { id, ...sessionData } = updatedSession;
         await updateDoc(sessionRef, sessionData);
         setSessions(prevSessions => 
@@ -82,9 +83,9 @@ export const SessionsProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   const deleteSession = async (sessionId: string) => {
-    if (!user) return;
+    if (!activeProfileUid) return;
     try {
-        await deleteDoc(doc(db, 'profiles', user.uid, 'sessions', sessionId));
+        await deleteDoc(doc(db, 'profiles', activeProfileUid, 'sessions', sessionId));
         setSessions(prevSessions => 
           prevSessions.filter(session => session.id !== sessionId)
         );

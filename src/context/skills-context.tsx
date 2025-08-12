@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -25,20 +26,20 @@ const SkillsContext = createContext<SkillsContextType>({
 });
 
 export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { activeProfileUid } = useAuth();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSkills = useCallback(async () => {
-    if (!user) {
+    if (!activeProfileUid) {
         setSkills([]);
         setLoading(false);
         return;
     };
 
     setLoading(true);
-    const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
+    const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
     try {
         const docSnap = await getDoc(docRef);
 
@@ -54,14 +55,14 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
         setLoading(false);
     }
-  }, [user]);
+  }, [activeProfileUid]);
 
   useEffect(() => {
     fetchSkills();
   }, [fetchSkills]);
 
   const toggleSkillCompletion = async (skillId: number) => {
-    if (!user) return;
+    if (!activeProfileUid) return;
     
     const newSkills = skills.map(skill =>
         skill.id === skillId ? { ...skill, completed: !skill.completed } : skill
@@ -69,7 +70,7 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     setSkills(newSkills);
 
     try {
-        const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
+        const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
         await setDoc(docRef, { skills: newSkills });
     } catch (error: any) {
         setSkills(skills);

@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import Tracker from "@/components/tracker"
@@ -10,10 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ManualLogForm from "@/components/manual-log-form";
 import { Gauge, PencilLine } from "lucide-react";
 import DashboardHeader from "@/components/dashboard-header";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Users } from "lucide-react";
 
 export default function TrackPage() {
     const { addSession } = useSessions();
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, shares, isViewingSharedAccount } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -33,6 +36,30 @@ export default function TrackPage() {
             <div className="text-2xl">Loading...</div>
             </div>
         );
+    }
+    
+    if (shares.length > 0 && !isViewingSharedAccount) {
+        return (
+             <main className="min-h-screen">
+                <DashboardHeader 
+                    userEmail={user.email}
+                    onLogout={handleLogout}
+                />
+                <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+                     <Card className="mt-8 text-center">
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-center gap-3">
+                                <Users className="w-8 h-8 text-primary" />
+                                Select a Student
+                            </CardTitle>
+                            <CardDescription>
+                                To log a session, please first select a student from the account dropdown menu above.
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+                </div>
+            </main>
+        )
     }
 
     return (

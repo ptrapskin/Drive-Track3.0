@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
-import type { User, UserProfile } from '@/lib/types';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import type { User, UserProfile, Share } from '@/lib/types';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +13,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
   profile: UserProfile | null;
   refetchProfile: () => void;
+  shares: Share[];
+  activeProfileUid: string | null;
+  setActiveProfileUid: (uid: string | null) => void;
+  isViewingSharedAccount: boolean;
+  activeStudentName: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,33 +26,57 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   profile: null,
   refetchProfile: () => {},
+  shares: [],
+  activeProfileUid: null,
+  setActiveProfileUid: () => {},
+  isViewingSharedAccount: false,
+  activeStudentName: null,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shares, setShares] = useState<Share[]>([]);
+  const [activeProfileUid, setActiveProfileUid] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (uid: string) => {
     const docRef = doc(db, "profiles", uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      const profileData = docSnap.data() as UserProfile;
+      const profileData = { id: docSnap.id, ...docSnap.data() } as UserProfile;
       setProfile(profileData);
       return profileData;
     }
     setProfile(null);
     return null;
   }, []);
+
+  const fetchShares = useCallback(async (email: string) => {
+    const sharesRef = collection(db, "shares");
+    const q = query(sharesRef, where("guardianEmail", "==", email));
+    const querySnapshot = await getDocs(q);
+    const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
+    setShares(sharesData);
+    if (sharesData.length > 0 && !activeProfileUid) {
+        // By default, view own profile unless a student is selected
+        setActiveProfileUid(null); 
+    }
+  }, [activeProfileUid]);
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
-    const newProfile: Pick<UserProfile, 'name' | 'email'> = {
-      name: firebaseUser.displayName || 'New User',
+    const newProfile: Omit<UserProfile, 'id'> = {
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
       email: firebaseUser.email,
+      dateOfBirth: null,
+      permitDate: null,
+      totalHoursGoal: null,
+      nightHoursGoal: null,
     };
     await setDoc(doc(db, "profiles", firebaseUser.uid), newProfile, { merge: true });
-    setProfile(newProfile as UserProfile);
-    return newProfile;
+    const createdProfile = { ...newProfile, id: firebaseUser.uid };
+    setProfile(createdProfile);
+    return createdProfile;
   }, []);
 
   const refetchProfile = useCallback(async () => {
@@ -65,6 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: firebaseUser.email,
         };
         setUser(userPayload);
+        setActiveProfileUid(firebaseUser.uid); // Default to viewing own profile
         
         let existingProfile = await fetchProfile(firebaseUser.uid);
         if (!existingProfile) {
@@ -72,22 +102,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setProfile(existingProfile);
 
+        if (firebaseUser.email) {
+            await fetchShares(firebaseUser.email);
+        }
+
       } else {
         setUser(null);
         setProfile(null);
+        setShares([]);
+        setActiveProfileUid(null);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchProfile, createProfile]);
+  }, [fetchProfile, createProfile, fetchShares]);
   
   const logout = async () => {
     await signOut(auth);
   };
 
+  const isViewingSharedAccount = !!(user && activeProfileUid && user.uid !== activeProfileUid);
+  const activeStudentName = isViewingSharedAccount ? shares.find(s => s.studentUid === activeProfileUid)?.studentName || null : null;
+  
+  const handleSetActiveProfileUid = (uid: string | null) => {
+    if (uid === user?.uid || uid === null) {
+      // Guardian is viewing their own (empty) dashboard
+      setActiveProfileUid(user?.uid || null);
+    } else {
+      // Guardian is viewing a student's dashboard
+      setActiveProfileUid(uid);
+    }
+  };
+
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, shares, activeProfileUid, setActiveProfileUid: handleSetActiveProfileUid, isViewingSharedAccount, activeStudentName }}>
       {children}
     </AuthContext.Provider>
   );

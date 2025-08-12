@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,11 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { Mail } from 'lucide-react';
+import { Mail, Share2 } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
+  const [guardianEmail, setGuardianEmail] = useState('');
   
   useEffect(() => {
     if (profile) {
@@ -95,6 +97,33 @@ export default function ProfilePage() {
         title: "Error Sending Email",
         description: error.message,
       });
+    }
+  };
+
+  const handleShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !guardianEmail || !profile) return;
+
+    try {
+        await addDoc(collection(db, "shares"), {
+            studentUid: user.uid,
+            studentEmail: user.email,
+            studentName: profile.name || user.email,
+            guardianEmail: guardianEmail,
+            status: "pending", // You might expand on this with 'accepted' status later
+            createdAt: serverTimestamp(),
+        });
+        toast({
+            title: "Account Shared",
+            description: `An invitation has been sent to ${guardianEmail}. They will see your profile next time they log in.`,
+        });
+        setGuardianEmail('');
+    } catch (error: any) {
+         toast({
+            variant: "destructive",
+            title: "Error Sharing Account",
+            description: error.message,
+        });
     }
   };
 
@@ -190,6 +219,34 @@ export default function ProfilePage() {
                                 <Button type="submit">Save Changes</Button>
                             </div>
                         </fieldset>
+                    </form>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Share Your Account</CardTitle>
+                    <CardDescription>Allow a parent or guardian to view your driving logs and progress.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleShare} className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-grow space-y-2">
+                            <Label htmlFor="guardian-email">Guardian's Email Address</Label>
+                            <Input
+                                id="guardian-email"
+                                type="email"
+                                value={guardianEmail}
+                                onChange={(e) => setGuardianEmail(e.target.value)}
+                                placeholder="guardian@example.com"
+                                required
+                            />
+                        </div>
+                        <div className="self-end">
+                             <Button type="submit">
+                                <Share2 className="mr-2 h-4 w-4" />
+                                Share
+                            </Button>
+                        </div>
                     </form>
                 </CardContent>
             </Card>
