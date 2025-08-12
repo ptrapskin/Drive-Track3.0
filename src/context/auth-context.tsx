@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
 import type { User, UserProfile, Share } from '@/lib/types';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -53,16 +53,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const fetchShares = useCallback(async (email: string) => {
-    const sharesRef = collection(db, "shares");
-    const q = query(sharesRef, where("guardianEmail", "==", email));
-    const querySnapshot = await getDocs(q);
-    const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
-    setShares(sharesData);
-    if (sharesData.length > 0 && !activeProfileUid) {
-        // By default, view own profile unless a student is selected
-        setActiveProfileUid(null); 
+    const sanitizedEmail = encodeURIComponent(email);
+    const sharesQuery = query(collectionGroup(db, 'sharedWith'), where('guardianEmail', '==', email));
+    
+    try {
+      const querySnapshot = await getDocs(sharesQuery);
+      const sharesData: Share[] = querySnapshot.docs.map(doc => {
+          const studentUid = doc.ref.parent.parent?.id;
+          const data = doc.data();
+          return {
+              studentUid: studentUid!,
+              studentEmail: data.studentEmail,
+              studentName: data.studentName
+          };
+      });
+      setShares(sharesData);
+    } catch (e) {
+      console.error("Error fetching shares", e)
+      setShares([]);
     }
-  }, [activeProfileUid]);
+  }, []);
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
     const newProfile: Omit<UserProfile, 'id'> = {
@@ -81,9 +91,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refetchProfile = useCallback(async () => {
     if (user) {
-        await fetchProfile(user.uid);
+        const currentActiveUid = activeProfileUid || user.uid;
+        await fetchProfile(currentActiveUid);
     }
-  }, [user, fetchProfile]);
+  }, [user, fetchProfile, activeProfileUid]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
@@ -94,14 +105,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: firebaseUser.email,
         };
         setUser(userPayload);
-        setActiveProfileUid(firebaseUser.uid); // Default to viewing own profile
+        setActiveProfileUid(firebaseUser.uid);
         
         let existingProfile = await fetchProfile(firebaseUser.uid);
         if (!existingProfile) {
           existingProfile = await createProfile(firebaseUser) as UserProfile;
         }
-        setProfile(existingProfile);
-
+        
         if (firebaseUser.email) {
             await fetchShares(firebaseUser.email);
         }
@@ -117,6 +127,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => unsubscribe();
   }, [fetchProfile, createProfile, fetchShares]);
+
+  useEffect(() => {
+    if (activeProfileUid) {
+      fetchProfile(activeProfileUid)
+    }
+  }, [activeProfileUid, fetchProfile])
   
   const logout = async () => {
     await signOut(auth);
@@ -126,13 +142,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const activeStudentName = isViewingSharedAccount ? shares.find(s => s.studentUid === activeProfileUid)?.studentName || null : null;
   
   const handleSetActiveProfileUid = (uid: string | null) => {
-    if (uid === user?.uid || uid === null) {
-      // Guardian is viewing their own (empty) dashboard
-      setActiveProfileUid(user?.uid || null);
-    } else {
-      // Guardian is viewing a student's dashboard
-      setActiveProfileUid(uid);
-    }
+    setActiveProfileUid(uid);
   };
 
 

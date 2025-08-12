@@ -37,11 +37,7 @@ export interface Skill {
 }
 
 export interface Share {
-    id: string;
     studentUid: string;
     studentEmail: string;
     studentName: string;
-    guardianEmail: string;
-    status: 'pending' | 'accepted';
-    createdAt: any; // Firestore timestamp
 }

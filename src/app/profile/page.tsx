@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
-import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -103,16 +103,19 @@ export default function ProfilePage() {
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !guardianEmail || !profile) return;
+    
+    // Sanitize email to use as a document ID
+    const sanitizedEmail = encodeURIComponent(guardianEmail);
 
     try {
-        await addDoc(collection(db, "shares"), {
-            studentUid: user.uid,
-            studentEmail: user.email,
-            studentName: profile.name || user.email,
+        const shareRef = doc(db, 'profiles', user.uid, 'sharedWith', sanitizedEmail);
+        await setDoc(shareRef, {
             guardianEmail: guardianEmail,
-            status: "pending", // You might expand on this with 'accepted' status later
+            studentName: profile.name || user.email,
+            studentEmail: user.email,
             createdAt: serverTimestamp(),
         });
+        
         toast({
             title: "Account Shared",
             description: `An invitation has been sent to ${guardianEmail}. They will see your profile next time they log in.`,

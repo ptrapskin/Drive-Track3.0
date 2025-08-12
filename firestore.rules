@@ -1,44 +1,19 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is a designated guardian for another user.
-    function isGuardian(studentUid) {
-      // The user is a guardian if a 'share' document exists where the guardian's email
-      // matches the requestor's email and the student's UID matches.
-      return exists(/databases/$(database)/documents/shares/$(request.auth.uid)_$(studentUid)) ||
-             exists(/databases/$(database)/documents/shares/$(studentUid)_$(request.auth.uid)) ||
-             (get(/databases/$(database)/documents/shares/$(request.resource.data.studentUid)_$(request.resource.data.guardianEmail)).data.guardianEmail == request.auth.token.email) ||
-             (exists(/databases/$(database)/documents/shares?studentUid=$(studentUid)&guardianEmail=$(request.auth.token.email)));
-    }
-
-    // Profiles can be read or written by the owner.
+    // Users can only read/write their own profile data.
     match /profiles/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null; // Any authenticated user can create a profile.
-    }
-    
-    // Sessions can be read or written by the owner or a designated guardian.
-    match /profiles/{studentUid}/sessions/{sessionId} {
-      allow read, write: if request.auth != null && 
-                           (request.auth.uid == studentUid || 
-                            isGuardian(studentUid));
-    }
-    
-    // Skills can be read or written by the owner or a designated guardian.
-    match /profiles/{studentUid}/skills/{skillId} {
-       allow read, write: if request.auth != null && 
-                           (request.auth.uid == studentUid || 
-                            isGuardian(studentUid));
-    }
-
-    // Shares can be created by the student (owner of the profile)
-    // and read by the invited guardian.
-    match /shares/{shareId} {
-      allow create: if request.auth != null && request.resource.data.studentUid == request.auth.uid;
-      allow read: if request.auth != null && get(resource.data).data.guardianEmail == request.auth.token.email;
-      // No update/delete for now to keep it simple.
+      allow read, update, delete: if request.auth.uid == userId;
+      allow create: if request.auth.uid == userId;
+      
+      // Allow read/write access to subcollections if the user is the owner
+      // OR if they are a guardian the profile has been shared with.
+      match /{subcollection}/{docId} {
+         allow read, write: if request.auth.uid == userId || 
+                              exists(/databases/$(database)/documents/profiles/$(userId)/sharedWith/$(request.auth.token.email.replace('@', '%40')));
+      }
     }
   }
 }
