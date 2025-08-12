@@ -23,7 +23,7 @@ export default function Dashboard({ sessions }: DashboardProps) {
 
   const totalHoursGoal = profile?.totalHoursGoal;
   const nightHoursGoal = profile?.nightHoursGoal;
-  const hasGoals = totalHoursGoal && nightHoursGoal && totalHoursGoal > 0 && nightHoursGoal > 0;
+  const hasGoals = !!(totalHoursGoal && nightHoursGoal && totalHoursGoal > 0 && nightHoursGoal > 0);
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(
@@ -63,20 +63,20 @@ export default function Dashboard({ sessions }: DashboardProps) {
           </CardContent>
         </Card>
       )}
-       {hasGoals && (
+       {hasGoals && profile && (
         <section>
           <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ProgressCard 
                 title="Total Hours Goal"
                 currentValue={totalHours}
-                goalValue={totalHoursGoal}
+                goalValue={profile.totalHoursGoal || 0}
                 unit="hours"
               />
               <ProgressCard 
                 title="Night Hours Goal"
                 currentValue={nightHours}
-                goalValue={nightHoursGoal}
+                goalValue={profile.nightHoursGoal || 0}
                 unit="hours"
               />
           </div>
@@ -113,7 +113,7 @@ export default function Dashboard({ sessions }: DashboardProps) {
                       </CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <p className="text-muted-foreground mb-4">The following students are sharing their driving logs with you. Select a student to view their progress and log sessions for them.</p>
+                      <p className="text-muted-foreground mb-4">The following students are sharing their driving logs with you. Select a student to view their progress.</p>
                       <div className="space-y-2">
                           {shares.map(share => (
                               <Button key={share.id} variant="outline" className="w-full justify-start" onClick={() => setActiveProfile(share.studentUid, share.studentEmail)}>

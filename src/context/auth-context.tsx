@@ -54,19 +54,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(profileData);
       return profileData;
     }
+    setProfile(null); // Explicitly set profile to null if not found
     return null;
   }, []);
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
-    const newProfile: Omit<UserProfile, 'totalHoursGoal' | 'nightHoursGoal' | 'dateOfBirth' | 'permitDate'> = {
+    const newProfile: Omit<UserProfile, 'id' | 'totalHoursGoal' | 'nightHoursGoal' | 'dateOfBirth' | 'permitDate'> = {
       name: firebaseUser.displayName || 'New User',
       email: firebaseUser.email,
     };
-    await setDoc(doc(db, "profiles", firebaseUser.uid), newProfile);
+    await setDoc(doc(db, "profiles", firebaseUser.uid), newProfile, { merge: true });
     setProfile(newProfile as UserProfile);
+    return newProfile;
   }, []);
 
   const fetchShares = useCallback(async (email: string) => {
+    if (!email) {
+        setShares([]);
+        return;
+    }
     const q = query(collection(db, "shares"), where("guardianEmail", "==", email));
     const querySnapshot = await getDocs(q);
     const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
@@ -80,16 +86,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [activeProfileUid, fetchProfile]);
   
   const setActiveProfile = (uid: string, email: string) => {
+    setLoading(true);
     setActiveProfileUid(uid);
     setActiveProfileEmail(email);
-    fetchProfile(uid); 
+    fetchProfile(uid).finally(() => setLoading(false)); 
   };
   
   const resetActiveProfile = () => {
     if (user) {
+        setLoading(true);
         setActiveProfileUid(user.uid);
         setActiveProfileEmail(user.email);
-        fetchProfile(user.uid);
+        fetchProfile(user.uid).finally(() => setLoading(false));
     }
   };
 
@@ -103,10 +111,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
         setActiveProfileUid(firebaseUser.uid);
         setActiveProfileEmail(firebaseUser.email);
-        const existingProfile = await fetchProfile(firebaseUser.uid);
+        
+        let existingProfile = await fetchProfile(firebaseUser.uid);
         if (!existingProfile) {
-          await createProfile(firebaseUser);
+          existingProfile = await createProfile(firebaseUser) as UserProfile;
         }
+        setProfile(existingProfile); // Ensure profile is set after fetch/create
+
         if (firebaseUser.email) {
             await fetchShares(firebaseUser.email);
         }
