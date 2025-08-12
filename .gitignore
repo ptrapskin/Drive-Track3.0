@@ -11,7 +11,9 @@
 # next.js
 /.next/
 /out/
-/build/
+
+# production
+/build
 
 # misc
 .DS_Store
@@ -23,10 +25,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
 
 # vercel
 .vercel
@@ -34,7 +33,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# capacitor
-/ios/
-/android/
