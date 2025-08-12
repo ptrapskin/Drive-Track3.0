@@ -110,7 +110,9 @@ export default function SessionsLog({ sessions, showViewAll = false }: SessionsL
                         </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <WeatherIcon weather={session.weather} />
+                      <div className="flex items-center justify-center">
+                        <WeatherIcon weather={session.weather} />
+                      </div>
                     </TableCell>
                     <TableCell>
                     <div className="flex flex-wrap gap-1">
