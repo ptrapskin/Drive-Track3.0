@@ -4,26 +4,38 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can manage their own profile
-    match /profiles/{userId} {
-      allow read, write: if request.auth.uid == userId;
-
-      // Users can manage their own sessions and skills subcollections
-      match /{subcollection}/{docId} {
-        allow read, write, create, delete: if request.auth.uid == userId;
-      }
+    // Helper function to check if a share exists
+    function isSharedWith(studentUid, guardianEmail) {
+      return exists(/databases/$(database)/documents/shares/$(studentUid)_$(guardianEmail));
     }
 
-    // Rules for the 'shares' collection
+    // Profiles
+    match /profiles/{userId} {
+      // Users can read/write their own profile
+      // Guardians can read the profile of a student who shared with them
+      allow read, write: if request.auth.uid == userId;
+      allow read: if request.auth.token.email != null && isSharedWith(userId, request.auth.token.email);
+    }
+    
+    // Sessions and Skills subcollections
+    match /profiles/{userId}/{collection}/{docId} {
+       // Users can CRUD their own subcollection docs
+      allow read, write, create, delete: if request.auth.uid == userId;
+       // Guardians can read subcollection docs of a student who shared with them
+      allow read: if request.auth.token.email != null && isSharedWith(userId, request.auth.token.email);
+    }
+    
+    // Shares
     match /shares/{shareId} {
-      // Allow a user to create a share if they are the student
-      allow create: if request.auth.uid == request.resource.data.studentUid;
-
-      // Allow a user to read a share if they are the student OR the guardian
-      allow read: if request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail;
-
-      // Allow a user to delete a share if they are the student
-      allow delete: if request.auth.uid == resource.data.studentUid;
+        // Allow read/delete only if the user is the student who created it
+        allow read, delete: if request.auth.uid == resource.data.studentUid;
+        
+        // Allow create only if the studentUid in the new document matches the user's uid
+        allow create: if request.auth.uid == request.resource.data.studentUid;
+        
+        // Allow anyone logged in to query the collection
+        // The query itself will be filtered in the app by guardianEmail
+        allow list: if request.auth != null;
     }
   }
 }

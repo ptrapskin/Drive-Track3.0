@@ -4,14 +4,15 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
-import type { User, UserProfile } from '@/lib/types';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import type { User, UserProfile, Share } from '@/lib/types';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   logout: () => Promise<void>;
   profile: UserProfile | null;
+  shares: Share[];
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,11 +20,13 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   profile: null,
+  shares: [],
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (uid: string) => {
@@ -45,6 +48,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setProfile(newProfile);
   }, []);
 
+  const fetchShares = useCallback(async (email: string) => {
+    const q = query(collection(db, "shares"), where("guardianEmail", "==", email));
+    const querySnapshot = await getDocs(q);
+    const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
+    setShares(sharesData);
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       setLoading(true);
@@ -57,22 +67,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!existingProfile) {
           await createProfile(firebaseUser);
         }
+        if (firebaseUser.email) {
+            await fetchShares(firebaseUser.email);
+        }
       } else {
         setUser(null);
         setProfile(null);
+        setShares([]);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchProfile, createProfile]);
+  }, [fetchProfile, createProfile, fetchShares]);
   
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, shares }}>
       {children}
     </AuthContext.Provider>
   );

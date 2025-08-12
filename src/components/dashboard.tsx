@@ -5,7 +5,7 @@ import type { Session, Skill } from "@/lib/types";
 import { useMemo } from "react";
 import SummaryCard from "./summary-card";
 import SessionsLog from "./sessions-log";
-import { Clock, Milestone, Moon, Book, Award } from "lucide-react";
+import { Clock, Milestone, Moon, Book, Award, Users } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import Link from "next/link";
 import { Button } from "./ui/button";
@@ -19,7 +19,7 @@ interface DashboardProps {
 
 export default function Dashboard({ sessions }: DashboardProps) {
   const { skills } = useSkills();
-  const { profile } = useAuth();
+  const { profile, shares } = useAuth();
 
   const totalHoursGoal = profile?.totalHoursGoal || 50;
   const nightHoursGoal = profile?.nightHoursGoal || 10;
@@ -86,6 +86,29 @@ export default function Dashboard({ sessions }: DashboardProps) {
           />
         </div>
       </section>
+
+      {shares && shares.length > 0 && (
+          <section>
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="text-2xl font-bold font-headline flex items-center gap-2">
+                        <Users className="w-6 h-6 text-primary" />
+                        Shared With Me
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-muted-foreground mb-4">The following students are sharing their driving logs with you. Select a student to view their progress.</p>
+                      <div className="space-y-2">
+                          {shares.map(share => (
+                              <Button key={share.id} variant="outline" className="w-full justify-start">
+                                  {share.studentEmail}
+                              </Button>
+                          ))}
+                      </div>
+                  </CardContent>
+              </Card>
+          </section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <section className="lg:col-span-2">
