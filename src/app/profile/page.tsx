@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,15 +12,16 @@ import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(profile);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
   
@@ -71,6 +72,31 @@ export default function ProfilePage() {
         });
     }
   };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No email address found for this user.",
+      });
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your inbox for a link to reset your password.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error Sending Email",
+        description: error.message,
+      });
+    }
+  };
+
 
   if (loading || !user || !currentProfile) {
     return (
@@ -165,6 +191,23 @@ export default function ProfilePage() {
                         </fieldset>
                     </form>
                 </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Security</CardTitle>
+                <CardDescription>Manage your password.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    To change your password, we'll send a secure link to your email address.
+                  </p>
+                  <Button onClick={handlePasswordReset} variant="outline">
+                    Send Password Reset Email
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
