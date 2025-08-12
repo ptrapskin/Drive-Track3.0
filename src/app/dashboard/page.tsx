@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect } from 'react';
-import type { Session } from '@/lib/types';
 import Dashboard from '@/components/dashboard';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
@@ -21,15 +20,17 @@ import { useSessions } from '@/context/sessions-context';
 import DriveTrackLogo from '@/components/drive-track-logo';
 
 export default function DashboardPage() {
-  const { sessions } = useSessions();
-  const { user, loading, logout } = useAuth();
+  const { sessions, loading: sessionsLoading } = useSessions();
+  const { user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
+
+  const loading = authLoading || sessionsLoading;
 
   if (loading || !user) {
     return (

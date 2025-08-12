@@ -4,7 +4,6 @@
 import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import type { Session } from '@/lib/types';
 import SessionsLog from '@/components/sessions-log';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -14,30 +13,22 @@ import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { useSessions } from '@/context/sessions-context';
 import DriveTrackLogo from '@/components/drive-track-logo';
+import type { UserProfile } from '@/lib/types';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
 }
 
 export default function LogsPage() {
-  const { sessions } = useSessions();
-  const { user, loading } = useAuth();
+  const { sessions, loading: sessionsLoading } = useSessions();
+  const { user, profile, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Mock user profile data - in a real app, this would be fetched from your database
-  const userProfile = {
-      name: user?.email?.split('@')[0] || "Student Driver",
-      dob: 'Jan 1, 2008',
-      permitDate: 'Jan 1, 2024',
-      totalHoursGoal: 50,
-      nightHoursGoal: 10,
-  };
-
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(
@@ -77,7 +68,13 @@ export default function LogsPage() {
     doc.autoTable({
         startY: 48,
         head: [['Name', 'Date of Birth', 'Permit Issue Date', 'Total Goal (hrs)', 'Night Goal (hrs)']],
-        body: [[userProfile.name, userProfile.dob, userProfile.permitDate, userProfile.totalHoursGoal, userProfile.nightHoursGoal]],
+        body: [[
+            user?.email?.split('@')[0] || "Student Driver",
+            profile?.dateOfBirth ? format(new Date(profile.dateOfBirth), 'MMM d, yyyy') : 'N/A',
+            profile?.permitDate ? format(new Date(profile.permitDate), 'MMM d, yyyy') : 'N/A',
+            profile?.totalHoursGoal || 50,
+            profile?.nightHoursGoal || 10
+        ]],
         theme: 'grid',
         styles: { fontSize: 10 },
     });
@@ -115,6 +112,8 @@ export default function LogsPage() {
     doc.save('driving-log.pdf');
   };
   
+  const loading = authLoading || sessionsLoading;
+
   if (loading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">

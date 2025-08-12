@@ -1,7 +1,9 @@
+
 "use client";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   projectId: "drive-track-7027f",
@@ -15,6 +17,7 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 const signInWithGoogle = async () => {
@@ -27,4 +30,4 @@ const signInWithGoogle = async () => {
     }
 };
 
-export { app, auth, signInWithGoogle };
+export { app, auth, db, signInWithGoogle };

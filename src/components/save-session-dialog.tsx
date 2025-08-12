@@ -38,8 +38,8 @@ import { useState } from "react";
 interface SaveSessionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  session: Omit<Session, "id" | "date">;
-  onSave: (session: Omit<Session, "id" | "date">) => void;
+  session: Omit<Session, "id">;
+  onSave: (session: Omit<Session, "id">) => void;
   onResume: () => void;
   onDiscard: () => void;
 }
@@ -72,7 +72,7 @@ export default function SaveSessionDialog({
   });
   
   const onSubmit = (data: z.infer<typeof sessionSchema>) => {
-    onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay });
+    onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay, date: new Date().toISOString() });
     setIsEditing(false);
   };
 
@@ -152,7 +152,7 @@ export default function SaveSessionDialog({
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select time of day" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Morning">Morning</SelectItem>

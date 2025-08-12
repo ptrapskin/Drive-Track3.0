@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -9,65 +9,138 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
-import { ArrowLeft, Share2, Trash2 } from 'lucide-react';
+import { Share2, Trash2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DriveTrackLogo from '@/components/drive-track-logo';
-import { Separator } from '@/components/ui/separator';
+import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+import type { UserProfile } from '@/lib/types';
+
+interface Share {
+    id: string;
+    studentEmail: string;
+    guardianEmail: string;
+}
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [profile, setProfile] = useState<UserProfile>({ email: null });
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
-  const [totalHoursGoal, setTotalHoursGoal] = useState<number>(50);
-  const [nightHoursGoal, setNightHoursGoal] = useState<number>(10);
 
   const [shareEmail, setShareEmail] = useState('');
-  const [sharedWith, setSharedWith] = useState(['friend@example.com']);
+  const [sharedWith, setSharedWith] = useState<Share[]>([]);
+
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    const docRef = doc(db, "profiles", user.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data() as UserProfile;
+      setProfile(data);
+      if (data.dateOfBirth) setDateOfBirth(new Date(data.dateOfBirth));
+      if (data.permitDate) setPermitDate(new Date(data.permitDate));
+    } else {
+      setProfile({
+        email: user.email,
+        totalHoursGoal: 50,
+        nightHoursGoal: 10,
+      })
+    }
+  }, [user]);
+  
+  const fetchShares = useCallback(async () => {
+    if (!user) return;
+    const q = query(collection(db, "shares"), where("studentUid", "==", user.uid));
+    const querySnapshot = await getDocs(q);
+    const shares: Share[] = [];
+    querySnapshot.forEach((doc) => {
+        shares.push({ id: doc.id, ...doc.data() } as Share);
+    });
+    setSharedWith(shares);
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+    } else if (user) {
+      fetchProfile();
+      fetchShares();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, fetchProfile, fetchShares]);
   
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically save the data to a backend/database
-    console.log({
-        dateOfBirth,
-        permitDate,
-        totalHoursGoal,
-        nightHoursGoal
-    });
-    toast({
-        title: "Profile Saved",
-        description: "Your information has been updated successfully.",
-    })
+    if (!user) return;
+
+    const profileToSave: UserProfile = {
+        ...profile,
+        email: user.email,
+        dateOfBirth: dateOfBirth?.toISOString(),
+        permitDate: permitDate?.toISOString(),
+    };
+
+    try {
+        await setDoc(doc(db, "profiles", user.uid), profileToSave, { merge: true });
+        toast({
+            title: "Profile Saved",
+            description: "Your information has been updated successfully.",
+        });
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error Saving Profile",
+            description: error.message,
+        });
+    }
   };
   
-  const handleShare = (e: React.FormEvent) => {
+  const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shareEmail) return;
-    // In a real app, you'd send an invitation or add to a database
-    setSharedWith([...sharedWith, shareEmail]);
-    setShareEmail('');
-    toast({
-      title: 'Account Shared',
-      description: `Invitation sent to ${shareEmail}.`,
-    });
+    if (!shareEmail || !user || !user.email) return;
+    
+    const shareData = {
+        studentUid: user.uid,
+        studentEmail: user.email,
+        guardianEmail: shareEmail,
+        status: 'pending'
+    };
+
+    try {
+        const docRef = await addDoc(collection(db, "shares"), shareData);
+        setSharedWith([...sharedWith, { id: docRef.id, ...shareData }]);
+        setShareEmail('');
+        toast({
+          title: 'Account Shared',
+          description: `Invitation sent to ${shareEmail}. They will see it upon their next login.`,
+        });
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error Sharing Account",
+            description: error.message,
+        });
+    }
   };
 
-  const handleRemoveShare = (emailToRemove: string) => {
-    // In a real app, you'd update the database
-    setSharedWith(sharedWith.filter((email) => email !== emailToRemove));
-    toast({
-      title: 'Sharing Removed',
-      description: `Access for ${emailToRemove} has been revoked.`,
-    });
+  const handleRemoveShare = async (shareId: string) => {
+    try {
+        await deleteDoc(doc(db, "shares", shareId));
+        setSharedWith(sharedWith.filter((share) => share.id !== shareId));
+        toast({
+          title: 'Sharing Removed',
+          description: `Access has been revoked.`,
+        });
+    } catch(error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error Removing Share",
+            description: error.message,
+        });
+    }
   };
 
   if (loading || !user) {
@@ -118,8 +191,8 @@ export default function ProfilePage() {
                                 <Input
                                     id="total-hours-goal"
                                     type="number"
-                                    value={totalHoursGoal}
-                                    onChange={(e) => setTotalHoursGoal(Number(e.target.value))}
+                                    value={profile.totalHoursGoal || 50}
+                                    onChange={(e) => setProfile({...profile, totalHoursGoal: Number(e.target.value)})}
                                     placeholder="e.g. 50"
                                 />
                             </div>
@@ -128,8 +201,8 @@ export default function ProfilePage() {
                                 <Input
                                     id="night-hours-goal"
                                     type="number"
-                                    value={nightHoursGoal}
-                                    onChange={(e) => setNightHoursGoal(Number(e.target.value))}
+                                    value={profile.nightHoursGoal || 10}
+                                    onChange={(e) => setProfile({...profile, nightHoursGoal: Number(e.target.value)})}
                                     placeholder="e.g. 10"
                                 />
                             </div>
@@ -171,10 +244,10 @@ export default function ProfilePage() {
                       <Label>Currently Sharing With</Label>
                       {sharedWith.length > 0 ? (
                         <ul className="space-y-2">
-                          {sharedWith.map((email) => (
-                            <li key={email} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted">
-                              <span>{email}</span>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveShare(email)}>
+                          {sharedWith.map((share) => (
+                            <li key={share.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted">
+                              <span>{share.guardianEmail}</span>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveShare(share.id)}>
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </Button>
                             </li>

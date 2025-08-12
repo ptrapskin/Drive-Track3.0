@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { useSkills } from "@/context/skills-context";
 import ProgressCard from "./progress-card";
+import { useAuth } from "@/context/auth-context";
 
 interface DashboardProps {
   sessions: Session[];
@@ -18,10 +19,10 @@ interface DashboardProps {
 
 export default function Dashboard({ sessions }: DashboardProps) {
   const { skills } = useSkills();
+  const { profile } = useAuth();
 
-  // In a real app, these would come from user settings
-  const totalHoursGoal = 50;
-  const nightHoursGoal = 10;
+  const totalHoursGoal = profile?.totalHoursGoal || 50;
+  const nightHoursGoal = profile?.nightHoursGoal || 10;
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(

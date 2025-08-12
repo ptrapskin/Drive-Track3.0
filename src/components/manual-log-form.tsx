@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DatePicker } from "./ui/date-picker";
-import type { RoadType, Session, TimeOfDay, WeatherCondition } from "@/lib/types";
+import type { RoadType, Session, TimeOfDay } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { MultiSelect } from "./ui/multi-select";
 import { Save } from "lucide-react";
@@ -52,7 +52,7 @@ const manualLogSchema = z.object({
 type ManualLogFormValues = z.infer<typeof manualLogSchema>;
 
 interface ManualLogFormProps {
-    onSave: (newSession: Omit<Session, 'id' | 'date'>) => void;
+    onSave: (newSession: Omit<Session, 'id'>) => void;
 }
 
 export default function ManualLogForm({ onSave }: ManualLogFormProps) {
@@ -84,7 +84,10 @@ export default function ManualLogForm({ onSave }: ManualLogFormProps) {
         title: "Session Saved",
         description: "Your manual driving log has been added.",
     });
-    form.reset();
+    form.reset({
+        ...form.getValues(),
+        date: new Date(),
+    });
   }
 
   return (

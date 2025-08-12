@@ -1,6 +1,9 @@
+
 import type { Skill } from './types';
 
-export const initialSkills: Skill[] = [
+// This data is now used as a template for new users,
+// but completion status is managed in Firestore per user.
+export const initialSkills: Omit<Skill, 'completed'>[] = [
     {
       id: 1,
       title: 'Pre-Drive Vehicle Check',
@@ -11,7 +14,6 @@ export const initialSkills: Skill[] = [
         'Make sure windows and mirrors are clean and unobstructed.',
         'Ensure windshield wiper blades are functional and fluid levels are adequate.',
       ],
-      completed: false,
     },
     {
       id: 2,
@@ -23,7 +25,6 @@ export const initialSkills: Skill[] = [
         'Position the steering wheel 10–12 inches from chest and below shoulder height.',
         'Adjust mirrors using the blind-zone reduction method for full coverage.',
       ],
-      completed: false,
     },
     {
       id: 3,
@@ -35,7 +36,6 @@ export const initialSkills: Skill[] = [
         'Turn off the engine properly and engage the parking brake.',
         'Understand the function of dashboard indicators and gauges.',
       ],
-      completed: false,
     },
     {
       id: 4,
@@ -47,7 +47,6 @@ export const initialSkills: Skill[] = [
         'Practice identifying blind spots while stationary and in motion.',
         'Be especially alert for pedestrians, cyclists, and motorcycles.',
       ],
-      completed: false,
     },
     {
       id: 5,
@@ -59,7 +58,6 @@ export const initialSkills: Skill[] = [
         'Return the wheel smoothly to center after a turn.',
         'Use consistent grip pressure to maintain control on curves.',
       ],
-      completed: false,
     },
     {
       id: 6,
@@ -71,7 +69,6 @@ export const initialSkills: Skill[] = [
         'Accelerate gradually to avoid wheel spin or jerky starts.',
         'Practice stopping at a consistent distance before stop lines.',
       ],
-      completed: false,
     },
     {
       id: 7,
@@ -83,7 +80,6 @@ export const initialSkills: Skill[] = [
         'Turn the wheel in the direction you want the rear to go.',
         'Practice backing in a straight line and around corners.',
       ],
-      completed: false,
     },
     {
       id: 8,
@@ -95,7 +91,6 @@ export const initialSkills: Skill[] = [
         'Understand how vehicle height and seating position affect reference points.',
         'Use landmarks like side mirrors or hood center for consistency.',
       ],
-      completed: false,
     },
     {
       id: 9,
@@ -107,7 +102,6 @@ export const initialSkills: Skill[] = [
         'Check for pedestrians, bikes, and oncoming traffic.',
         'Look through the turn and steer smoothly.',
       ],
-      completed: false,
     },
     {
       id: 10,
@@ -119,7 +113,6 @@ export const initialSkills: Skill[] = [
         'Stay centered in the lane unless conditions require repositioning.',
         'Avoid drifting due to distraction or poor steering habits.',
       ],
-      completed: false,
     },
     {
       id: 11,
@@ -131,7 +124,6 @@ export const initialSkills: Skill[] = [
         'Yield to pedestrians and cross traffic when required.',
         'Do not enter an intersection unless you can clear it completely.',
       ],
-      completed: false,
     },
     {
       id: 12,
@@ -143,7 +135,6 @@ export const initialSkills: Skill[] = [
         'Reinforces good scanning habits and risk assessment.',
         'Builds confidence in complex driving environments.',
       ],
-      completed: false,
     },
     {
       id: 13,
@@ -155,7 +146,6 @@ export const initialSkills: Skill[] = [
         'Execute the decision confidently and smoothly.',
         'Use during all driving to stay proactive, not reactive.',
       ],
-      completed: false,
     },
     {
       id: 14,
@@ -167,7 +157,6 @@ export const initialSkills: Skill[] = [
         'Never tailgate—even in slow traffic.',
         'More space gives more reaction time and visibility.',
       ],
-      completed: false,
     },
     {
       id: 15,
@@ -179,7 +168,6 @@ export const initialSkills: Skill[] = [
         'Move smoothly into the new lane—no sharp swerves.',
         'Cancel signal and adjust following distance.',
       ],
-      completed: false,
     },
     {
       id: 16,
@@ -191,7 +179,6 @@ export const initialSkills: Skill[] = [
         'Do not exceed the speed limit while passing.',
         'Never pass on hills, curves, or in intersections.',
       ],
-      completed: false,
     },
     {
       id: 17,
@@ -203,7 +190,6 @@ export const initialSkills: Skill[] = [
         'Stay within 6–12 inches of the curb.',
         'Use the Dutch Reach to check for cyclists before opening doors.',
       ],
-      completed: false,
     },
     {
       id: 18,
@@ -215,7 +201,6 @@ export const initialSkills: Skill[] = [
         'Stop before hitting any curb or car ahead.',
         'Always check surroundings before backing out.',
       ],
-      completed: false,
     },
     {
       id: 19,
@@ -227,7 +212,6 @@ export const initialSkills: Skill[] = [
         'Use a driveway or wide shoulder if available for a two-point turn.',
         'Practice in low-traffic areas first.',
       ],
-      completed: false,
     },
     {
       id: 20,
@@ -239,7 +223,6 @@ export const initialSkills: Skill[] = [
         'Use the correct entry lane based on your direction.',
         'Do not change lanes or pass inside the roundabout.',
       ],
-      completed: false,
     },
     {
       id: 21,
@@ -251,7 +234,6 @@ export const initialSkills: Skill[] = [
         'Yield to freeway traffic; they have the right-of-way.',
         'Keep checking mirrors and blind spots.',
       ],
-      completed: false,
     },
     {
       id: 22,
@@ -263,7 +245,6 @@ export const initialSkills: Skill[] = [
         'Do not slow down on the freeway when exiting.',
         'Follow posted exit ramp speed limits.',
       ],
-      completed: false,
     },
     {
       id: 23,
@@ -275,7 +256,6 @@ export const initialSkills: Skill[] = [
         'Be alert at uncontrolled intersections and railroad crossings.',
         'Avoid overcorrecting if you go off the road.',
       ],
-      completed: false,
     },
     {
       id: 24,
@@ -287,7 +267,6 @@ export const initialSkills: Skill[] = [
         'Avoid passing on busy, congested streets.',
         'Expect sudden stops and unpredictable behavior.',
       ],
-      completed: false,
     },
     {
       id: 25,
@@ -299,7 +278,6 @@ export const initialSkills: Skill[] = [
         'Increase following distance and reduce speed.',
         'Scan for animals and pedestrians.',
       ],
-      completed: false,
     },
     {
       id: 26,
@@ -311,7 +289,6 @@ export const initialSkills: Skill[] = [
         'Turn on defroster if windows fog up.',
         'Be aware of black ice, especially on bridges.',
       ],
-      completed: false,
     },
     {
       id: 27,
@@ -323,7 +300,6 @@ export const initialSkills: Skill[] = [
         'If in a roundabout, exit before stopping.',
         'Signal and check surroundings before rejoining traffic.',
       ],
-      completed: false,
     },
     {
       id: 28,
@@ -335,7 +311,6 @@ export const initialSkills: Skill[] = [
         'Practice with safety tech in calm environments first.',
         'Don’t rely solely on sensors or cameras.',
       ],
-      completed: false,
     },
     {
       id: 29,
@@ -347,7 +322,6 @@ export const initialSkills: Skill[] = [
         'Stay focused in conversations—pull over if needed.',
         'Know that multitasking increases crash risk.',
       ],
-      completed: false,
     },
     {
       id: 30,
@@ -359,6 +333,5 @@ export const initialSkills: Skill[] = [
         'Know how to say “no” to risky suggestions.',
         'Recognize when to pause or cancel a drive for safety.',
       ],
-      completed: false,
     },
   ];

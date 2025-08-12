@@ -1,3 +1,4 @@
+
 export type RoadType = "Residential" | "Arterial" | "Highway";
 export type WeatherCondition = "Sunny" | "Cloudy" | "Rainy" | "Snowy";
 export type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
@@ -15,6 +16,15 @@ export interface Session {
 export interface User {
   uid: string;
   email: string | null;
+}
+
+export interface UserProfile {
+  id?: string;
+  email: string | null;
+  dateOfBirth?: string;
+  permitDate?: string;
+  totalHoursGoal?: number;
+  nightHoursGoal?: number;
 }
 
 export interface Skill {
