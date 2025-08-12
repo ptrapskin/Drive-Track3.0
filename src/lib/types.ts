@@ -17,6 +17,7 @@ export interface Session {
 export interface User {
   uid: string;
   email: string | null;
+  familyId: string | null;
 }
 
 export interface UserProfile {
@@ -27,6 +28,8 @@ export interface UserProfile {
   permitDate?: string | null;
   totalHoursGoal?: number | null;
   nightHoursGoal?: number | null;
+  familyId?: string;
+  ownerId?: string;
 }
 
 export interface Skill {
@@ -34,4 +37,11 @@ export interface Skill {
   title: string;
   teachingPoints: string[];
   completed: boolean;
+}
+
+export interface FamilyLink {
+    id?: string;
+    studentEmail: string;
+    guardianEmail: string;
+    status: 'pending' | 'accepted';
 }

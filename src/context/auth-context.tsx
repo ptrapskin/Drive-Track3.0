@@ -3,9 +3,10 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth, db } from '@/firebase';
+import { auth, db, functions } from '@/firebase';
 import type { User, UserProfile } from '@/lib/types';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
 interface AuthContextType {
   user: User | null;
@@ -13,7 +14,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   profile: UserProfile | null;
   refetchProfile: () => void;
-  activeProfileUid: string | null; // Keep for context consumers
+  activeProfileUid: string | null; 
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,8 +31,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (uid: string) => {
-    const docRef = doc(db, "profiles", uid);
+  const fetchUserDocument = useCallback(async (uid: string) => {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as User;
+    }
+    return null;
+  }, []);
+
+  const fetchProfile = useCallback(async (familyId: string) => {
+    if (!familyId) return null;
+    const docRef = doc(db, "profiles", familyId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const profileData = { id: docSnap.id, ...docSnap.data() } as UserProfile;
@@ -42,42 +53,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return null;
   }, []);
 
-  const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
-    const newProfile: Omit<UserProfile, 'id'> = {
+  const createUserAndProfile = useCallback(async(firebaseUser: FirebaseUser) => {
+    const familyId = firebaseUser.uid; // New user owns their profile initially
+
+    // Create user document
+    const userDoc: Omit<User, 'uid'> = {
+      email: firebaseUser.email,
+      familyId: familyId,
+    };
+    await setDoc(doc(db, "users", firebaseUser.uid), userDoc);
+
+    // Create profile document
+    const newProfile: UserProfile = {
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
       email: firebaseUser.email,
       dateOfBirth: null,
       permitDate: null,
-      totalHoursGoal: null,
-      nightHoursGoal: null,
+      totalHoursGoal: 50,
+      nightHoursGoal: 10,
+      familyId: familyId,
+      ownerId: firebaseUser.uid
     };
-    await setDoc(doc(db, "profiles", firebaseUser.uid), newProfile, { merge: true });
-    const createdProfile = { ...newProfile, id: firebaseUser.uid };
-    setProfile(createdProfile);
-    return createdProfile;
+    await setDoc(doc(db, "profiles", familyId), newProfile);
+
+    const createdUser = { ...userDoc, uid: firebaseUser.uid };
+    setProfile({ ...newProfile, id: familyId });
+    return createdUser;
   }, []);
-
-  const refetchProfile = useCallback(async () => {
-    if (user) {
-        await fetchProfile(user.uid);
-    }
-  }, [user, fetchProfile]);
-
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       setLoading(true);
       if (firebaseUser) {
-        const userPayload = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-        };
-        setUser(userPayload);
+        let userDoc = await fetchUserDocument(firebaseUser.uid);
+
+        if (!userDoc) {
+          // Check if this user was invited before creating a new profile
+          const processInvite = httpsCallable(functions, 'processInvite');
+          try {
+            await processInvite({ email: firebaseUser.email });
+            // Re-fetch user doc after processing invite
+            userDoc = await fetchUserDocument(firebaseUser.uid);
+          } catch(e) {
+            console.log("No pending invite found or error processing it. Creating new profile.");
+          }
+        }
         
-        let existingProfile = await fetchProfile(firebaseUser.uid);
-        if (!existingProfile) {
-          existingProfile = await createProfile(firebaseUser) as UserProfile;
+        if (!userDoc) {
+          userDoc = await createUserAndProfile(firebaseUser);
         }
 
+        setUser(userDoc);
+        if (userDoc.familyId) {
+          await fetchProfile(userDoc.familyId);
+        } else {
+          setProfile(null);
+        }
       } else {
         setUser(null);
         setProfile(null);
@@ -86,14 +117,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [fetchProfile, createProfile]);
+  }, [fetchUserDocument, createUserAndProfile, fetchProfile]);
   
+  const refetchProfile = useCallback(async () => {
+    if (user?.familyId) {
+        await fetchProfile(user.familyId);
+    }
+  }, [user, fetchProfile]);
+
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, activeProfileUid: user?.uid || null }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, activeProfileUid: profile?.id || null }}>
       {children}
     </AuthContext.Provider>
   );

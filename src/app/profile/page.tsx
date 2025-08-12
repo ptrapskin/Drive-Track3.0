@@ -12,10 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, auth } from '@/firebase';
+import { db, auth, functions } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { Mail } from 'lucide-react';
+import { Mail, Share2 } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
+  const [guardianEmail, setGuardianEmail] = useState('');
   
   useEffect(() => {
     if (profile) {
@@ -47,11 +49,11 @@ export default function ProfilePage() {
   
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !currentProfile) return;
+    if (!user || !currentProfile || !profile?.id) return;
 
     const profileToSave: Omit<UserProfile, 'id'> = {
+        ...profile,
         name: currentProfile.name || '',
-        email: user.email,
         dateOfBirth: dateOfBirth?.toISOString() || null,
         permitDate: permitDate?.toISOString() || null,
         totalHoursGoal: currentProfile.totalHoursGoal || null,
@@ -59,7 +61,7 @@ export default function ProfilePage() {
     };
 
     try {
-        await setDoc(doc(db, "profiles", user.uid), profileToSave, { merge: true });
+        await setDoc(doc(db, "profiles", profile.id), profileToSave, { merge: true });
         refetchProfile();
         toast({
             title: "Profile Saved",
@@ -71,6 +73,35 @@ export default function ProfilePage() {
             title: "Error Saving Profile",
             description: error.message,
         });
+    }
+  };
+  
+  const handleShare = async () => {
+    if (!guardianEmail) {
+      toast({ variant: 'destructive', title: 'Guardian email is required.' });
+      return;
+    }
+    if (!user?.email) {
+      toast({ variant: 'destructive', title: 'Could not identify your email.' });
+      return;
+    }
+
+    const createInvite = httpsCallable(functions, 'createInvite');
+    try {
+      const result = await createInvite({ studentEmail: user.email, guardianEmail });
+      console.log(result);
+      toast({
+        title: 'Invitation Sent!',
+        description: `An invitation has been sent to ${guardianEmail}. Once they sign up, they will have access to your log.`,
+      });
+      setGuardianEmail('');
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Send Invitation',
+        description: error.message,
+      });
     }
   };
 
@@ -105,6 +136,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const isOwner = user.uid === profile?.ownerId;
 
   return (
     <main className="min-h-screen">
@@ -152,7 +185,7 @@ export default function ProfilePage() {
                                     <Input
                                         id="email"
                                         type="email"
-                                        value={user.email || ''}
+                                        value={profile?.email || ''}
                                         disabled
                                     />
                                 </div>
@@ -192,6 +225,38 @@ export default function ProfilePage() {
                     </form>
                 </CardContent>
             </Card>
+
+            {isOwner && (
+                <Card>
+                <CardHeader>
+                    <CardTitle>Share Your Account</CardTitle>
+                    <CardDescription>
+                    Invite a parent or guardian to view your logs and track sessions with you.
+                    They will need to sign up with the same email address.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-grow space-y-2">
+                        <Label htmlFor="guardian-email">Guardian's Email</Label>
+                        <Input
+                        id="guardian-email"
+                        type="email"
+                        value={guardianEmail}
+                        onChange={(e) => setGuardianEmail(e.target.value)}
+                        placeholder="guardian@example.com"
+                        />
+                    </div>
+                    <div className="flex-shrink-0 sm:self-end">
+                        <Button onClick={handleShare} className="w-full sm:w-auto">
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Send Invite
+                        </Button>
+                    </div>
+                    </div>
+                </CardContent>
+                </Card>
+            )}
 
             <Card>
               <CardHeader>

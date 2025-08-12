@@ -1,31 +1,85 @@
 
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as admin from "firebase-admin";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
 
-import {setGlobalOptions} from "firebase-functions/v2";
+admin.initializeApp();
+const db = admin.firestore();
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+// Function to create an invitation
+export const createInvite = onCall(async (request) => {
+  const {studentEmail, guardianEmail} = request.data;
+  if (!studentEmail || !guardianEmail) {
+    throw new HttpsError(
+        "invalid-argument",
+        "Missing studentEmail or guardianEmail",
+    );
+  }
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({maxInstances: 5}, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+  // Find student user doc to get their familyId
+  const studentQuery = await db.collection("users")
+      .where("email", "==", studentEmail).limit(1).get();
+  if (studentQuery.empty) {
+    throw new HttpsError("not-found", "Student user not found.");
+  }
+  const studentDoc = studentQuery.docs[0];
+  const familyId = studentDoc.data().familyId;
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+  if (!familyId) {
+    throw new HttpsError("failed-precondition", "Student has no familyId.");
+  }
+
+  // Create an invite document
+  await db.collection("invites").add({
+    studentEmail,
+    guardianEmail,
+    familyId,
+    status: "pending",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  logger.info(`Invite created for ${guardianEmail} to join ${studentEmail}'s family.`);
+  return {success: true};
+});
+
+
+// Function to be called when a new user signs up or an existing user logs in.
+// It checks for pending invites for that user's email.
+export const processInvite = onCall(async (request) => {
+  const userEmail = request.data.email;
+  const user = await admin.auth().getUserByEmail(userEmail);
+  const uid = user.uid;
+
+  if (!userEmail) {
+    throw new HttpsError("invalid-argument", "Missing user email.");
+  }
+
+  const invitesQuery = await db.collection("invites")
+      .where("guardianEmail", "==", userEmail)
+      .where("status", "==", "pending")
+      .get();
+
+  if (invitesQuery.empty) {
+    throw new HttpsError("not-found", "No pending invites for this user.");
+  }
+
+  const batch = db.batch();
+
+  invitesQuery.docs.forEach((inviteDoc) => {
+    const inviteData = inviteDoc.data();
+    const familyId = inviteData.familyId;
+
+    // Update the guardian's user document with the student's familyId
+    const guardianUserRef = db.collection("users").doc(uid);
+    batch.set(guardianUserRef, {familyId: familyId}, {merge: true});
+
+    // Mark the invite as accepted
+    batch.update(inviteDoc.ref, {status: "accepted", acceptedAt: admin.firestore.FieldValue.serverTimestamp()});
+
+    logger.info(`User ${uid} accepted invite and joined family ${familyId}`);
+  });
+
+  await batch.commit();
+
+  return {success: true, message: "Invites processed."};
+});
