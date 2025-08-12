@@ -4,27 +4,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Profiles: Users can only read and write their own profile.
+    // Users can manage their own profile
     match /profiles/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
 
-      // Sessions: Users can manage their own sessions subcollection.
-      match /sessions/{sessionId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // Skills: Users can manage their own skills subcollection.
-      match /skills/{skillDocId} {
-         allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+      // Users can manage their own sessions and skills subcollections
+      match /{subcollection}/{docId} {
+        allow read, write, create, delete: if request.auth.uid == userId;
       }
     }
 
-    // Shares: Allow users to create shares for their own UID and delete them.
-    // Guardians will need read access here, which we will add later.
+    // Rules for the 'shares' collection
     match /shares/{shareId} {
-        allow read: if request.auth != null && (request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail);
-        allow create: if request.auth != null && request.auth.uid == request.resource.data.studentUid;
-        allow delete: if request.auth != null && request.auth.uid == resource.data.studentUid;
+      // Allow a user to create a share if they are the student
+      allow create: if request.auth.uid == request.resource.data.studentUid;
+
+      // Allow a user to read a share if they are the student OR the guardian
+      allow read: if request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail;
+
+      // Allow a user to delete a share if they are the student
+      allow delete: if request.auth.uid == resource.data.studentUid;
     }
   }
 }

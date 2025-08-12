@@ -18,6 +18,7 @@ import type { UserProfile } from '@/lib/types';
 
 interface Share {
     id: string;
+    studentUid: string;
     studentEmail: string;
     guardianEmail: string;
 }
