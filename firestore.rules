@@ -3,57 +3,30 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Function to check if a share exists between a student and the logged-in user (guardian)
-    function isSharedWith(studentUid) {
-      return exists(/databases/$(database)/documents/shares/$(request.auth.uid)_$(studentUid)) || 
-             exists(
-                /databases/$(database)/documents/shares/$(studentUid)_$(request.auth.uid)
-              ) || 
-             get(/databases/$(database)/documents/shares/share_doc_placeholder).data.studentUid == studentUid; // this line is just for a placeholder check
-    }
-    
-    function isGuardianFor(studentUid) {
-        let shares = get(/databases/$(database)/documents/shares?where("studentUid", "==", studentUid).where("guardianEmail", "==", request.auth.email));
-        return shares.size() > 0;
-    }
-
-    function isShared(studentUid) {
-      // Check if there's a share document where the requesting user is the guardian for the student
-      return exists(
-        /databases/$(database)/documents/shares?query=guardianEmail==request.auth.email;studentUid==studentUid
-      );
-    }
-
-    // Allow users to create, read and update their own profile
+    // A user can only read, update, or delete their own profile.
+    // A user can only create a profile for themselves.
     match /profiles/{userId} {
-      allow read, update, create: if request.auth.uid == userId;
+      allow read, update, delete, create: if request.auth != null && request.auth.uid == userId;
+
+      // Any authenticated user can read from a share, but only the share owner can write to it.
+      // This allows a student to grant read access to a guardian.
+      match /shares/{shareId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
       
-      // Allow a guardian to read the student's profile
-      allow read: if isGuardianFor(userId);
+      // A user can read and write to any document in any subcollection of their own profile.
+      // This covers sessions, skills, etc.
+      match /{allDocuments=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
-    
-    // Allow users to manage their own sessions
-    match /profiles/{userId}/sessions/{sessionId} {
-      allow read, write, create, delete: if request.auth.uid == userId || isGuardianFor(userId);
-    }
-
-    // Allow users to manage their own skills
-    match /profiles/{userId}/skills/{skillId} {
-      allow read, write: if request.auth.uid == userId;
-      allow read: if isGuardianFor(userId);
-    }
-
-    // Rules for the shares collection
+    // Rules for the top-level shares collection for granting access
     match /shares/{shareId} {
-        // A user can create a share if they are the student
-        allow create: if request.auth.uid == request.resource.data.studentUid;
-        
-        // A user can delete a share if they are the student
-        allow delete: if get(/databases/$(database)/documents/shares/$(shareId)).data.studentUid == request.auth.uid;
-        
-        // A user (guardian) can read a share document if it's shared with them
-        allow read: if get(/databases/$(database)/documents/shares/$(shareId)).data.guardianEmail == request.auth.email;
+        allow read, write: if request.auth != null && request.auth.uid == resource.data.studentUid;
+        allow delete: if request.auth != null && request.auth.uid == resource.data.studentUid;
+         // Guardian can read the share document to see they have access
+        allow get: if request.auth != null && request.auth.uid == resource.data.guardianEmail;
     }
   }
 }
