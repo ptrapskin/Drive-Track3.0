@@ -29,7 +29,7 @@ export default function RootLayout({
           <SessionsProvider>
             <SkillsProvider>
               <div className="flex flex-col">
-                <main className="flex-1">
+                <main className="flex-1 bg-muted/40">
                     <div className="pb-16">
                         {children}
                     </div>

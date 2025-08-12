@@ -3,25 +3,14 @@
 
 import { useEffect } from 'react';
 import Dashboard from '@/components/dashboard';
-import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import Link from 'next/link';
 import { useSessions } from '@/context/sessions-context';
-import DriveTrackLogo from '@/components/drive-track-logo';
+import DashboardHeader from '@/components/dashboard-header';
 
 export default function DashboardPage() {
   const { sessions, loading: sessionsLoading } = useSessions();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +21,11 @@ export default function DashboardPage() {
 
   const loading = authLoading || sessionsLoading;
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
   if (loading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -41,50 +35,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen">
+       <DashboardHeader 
+        userEmail={activeProfileEmail || user.email}
+        onLogout={handleLogout}
+        isViewingSharedAccount={isViewingSharedAccount}
+       />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-         <header className="mb-8 flex justify-between items-start md:hidden">
-           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <DriveTrackLogo />
-              <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
-                Drive-Track
-              </h1>
-            </div>
-             <p className="text-muted-foreground">
-              Welcome! Your personal driving log.
-            </p>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                 <UserIcon className="h-4 w-4" />
-                {user.email}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/profile">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={async () => {
-                  await logout();
-                  router.push('/login');
-              }}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-
         <Dashboard sessions={sessions} />
-
       </div>
     </main>
   );
