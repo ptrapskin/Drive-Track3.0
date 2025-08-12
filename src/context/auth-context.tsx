@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth
 import { auth, db } from '@/firebase';
 import type { User, UserProfile, Share } from '@/lib/types';
 import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const fetchUserDocument = useCallback(async (uid: string) => {
     const docRef = doc(db, "users", uid);
@@ -62,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const querySnapshot = await getDocs(sharesQuery);
-    if (querySnapshot.empty) return;
+    if (querySnapshot.empty) return null;
 
     const batch = writeBatch(db);
     let familyId: string | null = null;
@@ -118,6 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   
   useEffect(() => {
+    // This effect runs only once to check the initial auth state.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       setLoading(true);
       if (firebaseUser) {
@@ -144,10 +148,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(null);
       }
       setLoading(false);
+      setHasLoadedOnce(true);
     });
 
     return () => unsubscribe();
-  }, [fetchUserDocument, createUserAndProfile, fetchProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // For subsequent page navigations, don't show a loading screen.
+    // The data from the initial load is preserved.
+    if (hasLoadedOnce) {
+      setLoading(false);
+    }
+  }, [pathname, hasLoadedOnce]);
   
   const refetchProfile = useCallback(async () => {
     if (user?.familyId) {
