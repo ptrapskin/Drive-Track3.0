@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -26,12 +25,14 @@ const SkillsContext = createContext<SkillsContextType>({
 });
 
 export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { activeProfileUid } = useAuth();
+  const { activeProfileUid, loading: authLoading } = useAuth();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSkills = useCallback(async () => {
+    if (authLoading) return; // Wait for auth to finish loading
+
     if (!activeProfileUid) {
         setSkills([]);
         setLoading(false);
@@ -55,7 +56,7 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
         setLoading(false);
     }
-  }, [activeProfileUid]);
+  }, [activeProfileUid, authLoading]);
 
   useEffect(() => {
     fetchSkills();

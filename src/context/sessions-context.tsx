@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -26,12 +25,14 @@ const SessionsContext = createContext<SessionsContextType>({
 });
 
 export const SessionsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { activeProfileUid } = useAuth();
+  const { activeProfileUid, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSessions = useCallback(async () => {
+    if (authLoading) return; // Wait for auth to finish loading
+
     if (!activeProfileUid) {
         setSessions([]);
         setLoading(false);
@@ -49,7 +50,7 @@ export const SessionsProvider = ({ children }: { children: React.ReactNode }) =>
     } finally {
         setLoading(false);
     }
-  }, [activeProfileUid, toast]);
+  }, [activeProfileUid, authLoading, toast]);
 
   useEffect(() => {
     fetchSessions();
