@@ -18,6 +18,7 @@ interface AuthContextType {
   isViewingSharedAccount: boolean;
   setActiveProfile: (uid: string, email: string) => void;
   resetActiveProfile: () => void;
+  refetchProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   isViewingSharedAccount: false,
   setActiveProfile: () => {},
   resetActiveProfile: () => {},
+  refetchProfile: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -72,6 +74,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
     setShares(sharesData);
   }, []);
+
+  const refetchProfile = useCallback(async () => {
+    if (activeProfileUid) {
+        await fetchProfile(activeProfileUid);
+    }
+  }, [activeProfileUid, fetchProfile]);
   
   const setActiveProfile = (uid: string, email: string) => {
     setActiveProfileUid(uid);
@@ -122,7 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, shares, activeProfileUid, activeProfileEmail, isViewingSharedAccount, setActiveProfile, resetActiveProfile }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, shares, activeProfileUid, activeProfileEmail, isViewingSharedAccount, setActiveProfile, resetActiveProfile, refetchProfile }}>
       {children}
     </AuthContext.Provider>
   );

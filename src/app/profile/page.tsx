@@ -25,7 +25,7 @@ interface Share {
 }
 
 export default function ProfilePage() {
-  const { user, loading, profile, isViewingSharedAccount, logout, activeProfileEmail } = useAuth();
+  const { user, loading, profile, isViewingSharedAccount, logout, activeProfileEmail, refetchProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -87,6 +87,7 @@ export default function ProfilePage() {
 
     try {
         await setDoc(doc(db, "profiles", user.uid), profileToSave, { merge: true });
+        refetchProfile();
         toast({
             title: "Profile Saved",
             description: "Your information has been updated successfully.",
