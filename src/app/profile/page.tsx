@@ -24,35 +24,17 @@ interface Share {
 }
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, profile, isViewingSharedAccount } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  const [profile, setProfile] = useState<UserProfile>({ email: null });
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(profile);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
 
   const [shareEmail, setShareEmail] = useState('');
   const [sharedWith, setSharedWith] = useState<Share[]>([]);
 
-  const fetchProfile = useCallback(async () => {
-    if (!user) return;
-    const docRef = doc(db, "profiles", user.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data() as UserProfile;
-      setProfile(data);
-      if (data.dateOfBirth) setDateOfBirth(new Date(data.dateOfBirth));
-      if (data.permitDate) setPermitDate(new Date(data.permitDate));
-    } else {
-      setProfile({
-        email: user.email,
-        totalHoursGoal: 50,
-        nightHoursGoal: 10,
-      })
-    }
-  }, [user]);
-  
   const fetchShares = useCallback(async () => {
     if (!user) return;
     const q = query(collection(db, "shares"), where("studentUid", "==", user.uid));
@@ -65,20 +47,27 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
+    if (profile) {
+      setCurrentProfile(profile);
+      if (profile.dateOfBirth) setDateOfBirth(new Date(profile.dateOfBirth));
+      if (profile.permitDate) setPermitDate(new Date(profile.permitDate));
+    }
+  }, [profile]);
+
+  useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     } else if (user) {
-      fetchProfile();
       fetchShares();
     }
-  }, [user, loading, router, fetchProfile, fetchShares]);
+  }, [user, loading, router, fetchShares]);
   
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !currentProfile) return;
 
     const profileToSave: UserProfile = {
-        ...profile,
+        ...currentProfile,
         email: user.email,
         dateOfBirth: dateOfBirth?.toISOString(),
         permitDate: permitDate?.toISOString(),
@@ -144,7 +133,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading || !user) {
+  if (loading || !user || !currentProfile) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-2xl">Loading...</div>
@@ -168,6 +157,16 @@ export default function ProfilePage() {
                 </p>
             </div>
         </header>
+        
+        {isViewingSharedAccount && (
+            <Card className="mb-8 bg-destructive/10 border-destructive">
+                <CardContent className="p-4">
+                    <p className="font-medium text-center text-destructive-foreground">
+                        You are viewing another user's profile. Editing is disabled.
+                    </p>
+                </CardContent>
+            </Card>
+        )}
 
         <div className="grid gap-8 md:grid-cols-3">
           <div className="md:col-span-2">
@@ -178,39 +177,41 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSave} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="dob">Date of Birth</Label>
-                                <DatePicker date={dateOfBirth} setDate={setDateOfBirth} />
+                        <fieldset disabled={isViewingSharedAccount} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="dob">Date of Birth</Label>
+                                    <DatePicker date={dateOfBirth} setDate={setDateOfBirth} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="permit-date">Permit Issue Date</Label>
+                                    <DatePicker date={permitDate} setDate={setPermitDate} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="total-hours-goal">Total Driving Hours Goal</Label>
+                                    <Input
+                                        id="total-hours-goal"
+                                        type="number"
+                                        value={currentProfile.totalHoursGoal || 50}
+                                        onChange={(e) => setCurrentProfile({...currentProfile, totalHoursGoal: Number(e.target.value)})}
+                                        placeholder="e.g. 50"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="night-hours-goal">Night Driving Hours Goal</Label>
+                                    <Input
+                                        id="night-hours-goal"
+                                        type="number"
+                                        value={currentProfile.nightHoursGoal || 10}
+                                        onChange={(e) => setCurrentProfile({...currentProfile, nightHoursGoal: Number(e.target.value)})}
+                                        placeholder="e.g. 10"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="permit-date">Permit Issue Date</Label>
-                                <DatePicker date={permitDate} setDate={setPermitDate} />
+                            <div className="flex justify-end">
+                                <Button type="submit">Save Changes</Button>
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="total-hours-goal">Total Driving Hours Goal</Label>
-                                <Input
-                                    id="total-hours-goal"
-                                    type="number"
-                                    value={profile.totalHoursGoal || 50}
-                                    onChange={(e) => setProfile({...profile, totalHoursGoal: Number(e.target.value)})}
-                                    placeholder="e.g. 50"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="night-hours-goal">Night Driving Hours Goal</Label>
-                                <Input
-                                    id="night-hours-goal"
-                                    type="number"
-                                    value={profile.nightHoursGoal || 10}
-                                    onChange={(e) => setProfile({...profile, nightHoursGoal: Number(e.target.value)})}
-                                    placeholder="e.g. 10"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end">
-                            <Button type="submit">Save Changes</Button>
-                        </div>
+                        </fieldset>
                     </form>
                 </CardContent>
             </Card>
@@ -227,6 +228,7 @@ export default function ProfilePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                 <fieldset disabled={isViewingSharedAccount}>
                   <form onSubmit={handleShare} className="space-y-2">
                     <Label htmlFor="share-email">Guardian/Friend Email</Label>
                     <div className="flex gap-2">
@@ -258,6 +260,7 @@ export default function ProfilePage() {
                         <p className="text-sm text-muted-foreground">You are not sharing your account with anyone.</p>
                       )}
                   </div>
+                  </fieldset>
                 </CardContent>
             </Card>
           </div>

@@ -5,7 +5,7 @@ import type { Session, Skill } from "@/lib/types";
 import { useMemo } from "react";
 import SummaryCard from "./summary-card";
 import SessionsLog from "./sessions-log";
-import { Clock, Milestone, Moon, Book, Award, Users } from "lucide-react";
+import { Clock, Milestone, Moon, Book, Award, Users, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import Link from "next/link";
 import { Button } from "./ui/button";
@@ -19,7 +19,7 @@ interface DashboardProps {
 
 export default function Dashboard({ sessions }: DashboardProps) {
   const { skills } = useSkills();
-  const { profile, shares } = useAuth();
+  const { profile, shares, setActiveProfile, isViewingSharedAccount, activeProfileEmail, resetActiveProfile } = useAuth();
 
   const totalHoursGoal = profile?.totalHoursGoal || 50;
   const nightHoursGoal = profile?.nightHoursGoal || 10;
@@ -49,6 +49,19 @@ export default function Dashboard({ sessions }: DashboardProps) {
 
   return (
     <div className="space-y-8">
+      {isViewingSharedAccount && (
+        <Card className="bg-primary/10 border-primary">
+          <CardContent className="p-4 flex items-center justify-between">
+            <p className="font-medium">
+              You are viewing the dashboard for <span className="font-bold">{activeProfileEmail}</span>.
+            </p>
+            <Button onClick={resetActiveProfile} variant="outline">
+              <ArrowLeft className="mr-2" />
+              Return to My Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      )}
        <section>
         <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -87,7 +100,7 @@ export default function Dashboard({ sessions }: DashboardProps) {
         </div>
       </section>
 
-      {shares && shares.length > 0 && (
+      {shares && shares.length > 0 && !isViewingSharedAccount && (
           <section>
               <Card>
                   <CardHeader>
@@ -97,10 +110,10 @@ export default function Dashboard({ sessions }: DashboardProps) {
                       </CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <p className="text-muted-foreground mb-4">The following students are sharing their driving logs with you. Select a student to view their progress.</p>
+                      <p className="text-muted-foreground mb-4">The following students are sharing their driving logs with you. Select a student to view their progress and log sessions for them.</p>
                       <div className="space-y-2">
                           {shares.map(share => (
-                              <Button key={share.id} variant="outline" className="w-full justify-start">
+                              <Button key={share.id} variant="outline" className="w-full justify-start" onClick={() => setActiveProfile(share.studentUid, share.studentEmail)}>
                                   {share.studentEmail}
                               </Button>
                           ))}

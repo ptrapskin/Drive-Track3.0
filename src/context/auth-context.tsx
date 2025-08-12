@@ -13,6 +13,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
   profile: UserProfile | null;
   shares: Share[];
+  activeProfileUid: string | null;
+  activeProfileEmail: string | null;
+  isViewingSharedAccount: boolean;
+  setActiveProfile: (uid: string, email: string) => void;
+  resetActiveProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +26,11 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   profile: null,
   shares: [],
+  activeProfileUid: null,
+  activeProfileEmail: null,
+  isViewingSharedAccount: false,
+  setActiveProfile: () => {},
+  resetActiveProfile: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -29,13 +39,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [activeProfileUid, setActiveProfileUid] = useState<string | null>(null);
+  const [activeProfileEmail, setActiveProfileEmail] = useState<string | null>(null);
+  const isViewingSharedAccount = user ? activeProfileUid !== user.uid : false;
+
+
   const fetchProfile = useCallback(async (uid: string) => {
     const docRef = doc(db, "profiles", uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      setProfile(docSnap.data() as UserProfile);
+      const profileData = docSnap.data() as UserProfile;
+      setProfile(profileData);
+      return profileData;
     }
-    return docSnap.data();
+    return null;
   }, []);
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
@@ -54,6 +71,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const sharesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Share));
     setShares(sharesData);
   }, []);
+  
+  const setActiveProfile = (uid: string, email: string) => {
+    setActiveProfileUid(uid);
+    setActiveProfileEmail(email);
+    fetchProfile(uid); 
+  };
+  
+  const resetActiveProfile = () => {
+    if (user) {
+        setActiveProfileUid(user.uid);
+        setActiveProfileEmail(user.email);
+        fetchProfile(user.uid);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
@@ -63,6 +94,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
         });
+        setActiveProfileUid(firebaseUser.uid);
+        setActiveProfileEmail(firebaseUser.email);
         const existingProfile = await fetchProfile(firebaseUser.uid);
         if (!existingProfile) {
           await createProfile(firebaseUser);
@@ -74,6 +107,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         setProfile(null);
         setShares([]);
+        setActiveProfileUid(null);
+        setActiveProfileEmail(null);
       }
       setLoading(false);
     });
@@ -86,7 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, shares }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, shares, activeProfileUid, activeProfileEmail, isViewingSharedAccount, setActiveProfile, resetActiveProfile }}>
       {children}
     </AuthContext.Provider>
   );

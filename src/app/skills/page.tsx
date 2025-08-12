@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import DriveTrackLogo from "@/components/drive-track-logo";
 
 export default function SkillsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isViewingSharedAccount } = useAuth();
   const router = useRouter();
   const { skills, completedSkillsCount } = useSkills();
   const totalSkills = skills.length;
@@ -47,6 +47,16 @@ export default function SkillsPage() {
             Learn these skills to become a safe and confident driver.
           </p>
         </header>
+
+        {isViewingSharedAccount && (
+            <Card className="mb-8 bg-destructive/10 border-destructive">
+                <CardContent className="p-4">
+                    <p className="font-medium text-center text-destructive-foreground">
+                        You are viewing another user's skills. Editing is disabled.
+                    </p>
+                </CardContent>
+            </Card>
+        )}
         
         <Card className="mb-8">
             <CardHeader>

@@ -24,20 +24,20 @@ const SkillsContext = createContext<SkillsContextType>({
 });
 
 export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { activeProfileUid, isViewingSharedAccount } = useAuth();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchSkills = useCallback(async () => {
-    if (!user) {
+    if (!activeProfileUid) {
         setSkills([]);
         setLoading(false);
         return;
     };
 
     setLoading(true);
-    const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
+    const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -54,14 +54,14 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
     setLoading(false);
-  }, [user, toast]);
+  }, [activeProfileUid, toast]);
 
   useEffect(() => {
     fetchSkills();
   }, [fetchSkills]);
 
   const toggleSkillCompletion = async (skillId: number) => {
-    if (!user) return;
+    if (!activeProfileUid || isViewingSharedAccount) return;
     
     const newSkills = skills.map(skill =>
         skill.id === skillId ? { ...skill, completed: !skill.completed } : skill
@@ -69,7 +69,7 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     setSkills(newSkills);
 
     try {
-        const docRef = doc(db, 'profiles', user.uid, 'skills', 'userSkills');
+        const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
         await setDoc(docRef, { skills: newSkills });
     } catch (error: any) {
         // Revert UI change on error

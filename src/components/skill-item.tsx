@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSkills } from "@/context/skills-context";
 import type { Skill } from "@/lib/types";
 import { Check, CheckCircle, Award } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 interface SkillItemProps {
   skill: Skill;
@@ -18,6 +19,7 @@ interface SkillItemProps {
 
 export default function SkillItem({ skill }: SkillItemProps) {
   const { toggleSkillCompletion } = useSkills();
+  const { isViewingSharedAccount } = useAuth();
 
   return (
     <AccordionItem value={`item-${skill.id}`}>
@@ -45,6 +47,7 @@ export default function SkillItem({ skill }: SkillItemProps) {
           <Button
             variant={skill.completed ? "secondary" : "default"}
             onClick={() => toggleSkillCompletion(skill.id)}
+            disabled={isViewingSharedAccount}
           >
             <Check className="mr-2 h-4 w-4" />
             {skill.completed ? "Mark as Incomplete" : "Mark as Completed"}
