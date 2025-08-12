@@ -15,6 +15,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { Mail } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -207,6 +208,24 @@ export default function ProfilePage() {
                     Send Password Reset Email
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Questions or Feedback?</CardTitle>
+                <CardDescription>We're here to help. Reach out to us with any questions.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                 <a href="mailto:hello@drive-track.com" className="inline-block w-full">
+                    <Button variant="outline" className="w-full">
+                      <Mail className="mr-2 h-4 w-4" />
+                      Contact Support
+                    </Button>
+                  </a>
+                  <p className="text-sm text-center text-muted-foreground mt-4">
+                    hello@drive-track.com
+                 </p>
               </CardContent>
             </Card>
           </div>
