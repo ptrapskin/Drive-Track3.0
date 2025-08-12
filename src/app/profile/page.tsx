@@ -75,11 +75,14 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user || !currentProfile) return;
 
-    const profileToSave: UserProfile = {
-        ...currentProfile,
+    // Create a clean object for Firestore, converting undefined to null
+    const profileToSave: Omit<UserProfile, 'id'> = {
+        name: currentProfile.name || '',
         email: user.email,
-        dateOfBirth: dateOfBirth?.toISOString(),
-        permitDate: permitDate?.toISOString(),
+        dateOfBirth: dateOfBirth?.toISOString() || null,
+        permitDate: permitDate?.toISOString() || null,
+        totalHoursGoal: currentProfile.totalHoursGoal || 50,
+        nightHoursGoal: currentProfile.nightHoursGoal || 10,
     };
 
     try {

@@ -20,12 +20,12 @@ export interface User {
 
 export interface UserProfile {
   id?: string;
-  name?: string;
+  name?: string | null;
   email: string | null;
-  dateOfBirth?: string;
-  permitDate?: string;
-  totalHoursGoal?: number;
-  nightHoursGoal?: number;
+  dateOfBirth?: string | null;
+  permitDate?: string | null;
+  totalHoursGoal?: number | null;
+  nightHoursGoal?: number | null;
 }
 
 export interface Skill {
