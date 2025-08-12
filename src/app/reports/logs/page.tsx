@@ -7,15 +7,13 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import SessionsLog from '@/components/sessions-log';
 import { Button } from '@/components/ui/button';
-import { Download, Users } from 'lucide-react';
+import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { useSessions } from '@/context/sessions-context';
 import DashboardHeader from '@/components/dashboard-header';
-import type { UserProfile } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
@@ -23,7 +21,7 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function LogsPage() {
   const { sessions, loading: sessionsLoading } = useSessions();
-  const { user, profile, loading: authLoading, logout, shares, isViewingSharedAccount } = useAuth();
+  const { user, profile, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -127,30 +125,6 @@ export default function LogsPage() {
         <div className="text-2xl">Loading...</div>
       </div>
     );
-  }
-
-  if (shares.length > 0 && !isViewingSharedAccount) {
-    return (
-         <main className="min-h-screen">
-            <DashboardHeader 
-                userEmail={user.email}
-                onLogout={handleLogout}
-            />
-            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-                 <Card className="mt-8 text-center">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-3">
-                            <Users className="w-8 h-8 text-primary" />
-                            Select a Student
-                        </CardTitle>
-                        <CardDescription>
-                            To view a log, please first select a student from the account dropdown menu above.
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
-            </div>
-        </main>
-    )
   }
 
   return (

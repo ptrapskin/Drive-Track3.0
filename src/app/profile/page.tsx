@@ -12,11 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, auth, functions } from '@/firebase';
+import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { Mail, Share2 } from 'lucide-react';
-import { httpsCallable } from 'firebase/functions';
+import { Mail } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -26,7 +25,6 @@ export default function ProfilePage() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
-  const [guardianEmail, setGuardianEmail] = useState('');
   
   useEffect(() => {
     if (profile) {
@@ -99,32 +97,6 @@ export default function ProfilePage() {
       });
     }
   };
-
-  const handleShare = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !guardianEmail || !profile) return;
-    
-    try {
-        const inviteGuardian = httpsCallable(functions, 'inviteGuardian');
-        const result: any = await inviteGuardian({ guardianEmail });
-
-        if (result.data.success) {
-            toast({
-                title: "Account Shared",
-                description: "Your guardian can now log in to view your progress.",
-            });
-        } else {
-             throw new Error(result.data.error || "Failed to share account.");
-        }
-    } catch (error: any) {
-         toast({
-            variant: "destructive",
-            title: "Error Sharing Account",
-            description: error.message,
-        });
-    }
-  };
-
 
   if (loading || !user || !currentProfile) {
     return (
@@ -222,34 +194,6 @@ export default function ProfilePage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Share Your Account</CardTitle>
-                    <CardDescription>Allow a parent or guardian to view your driving logs and progress.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleShare} className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-grow space-y-2">
-                            <Label htmlFor="guardian-email">Guardian's Email Address</Label>
-                            <Input
-                                id="guardian-email"
-                                type="email"
-                                value={guardianEmail}
-                                onChange={(e) => setGuardianEmail(e.target.value)}
-                                placeholder="guardian@example.com"
-                                required
-                            />
-                        </div>
-                        <div className="self-end">
-                             <Button type="submit">
-                                <Share2 className="mr-2 h-4 w-4" />
-                                Share
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
-            <Card>
               <CardHeader>
                 <CardTitle>Security</CardTitle>
                 <CardDescription>Manage your password.</CardDescription>
@@ -289,4 +233,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-    

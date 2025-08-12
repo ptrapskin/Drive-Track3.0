@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
-import type { User, UserProfile, Share, GuardianInvite } from '@/lib/types';
+import type { User, UserProfile } from '@/lib/types';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -13,11 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   profile: UserProfile | null;
   refetchProfile: () => void;
-  shares: Share[];
-  activeProfileUid: string | null;
-  setActiveProfileUid: (uid: string | null) => void;
-  isViewingSharedAccount: boolean;
-  activeStudentName: string | null;
+  activeProfileUid: string | null; // Keep for context consumers
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,19 +22,13 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   profile: null,
   refetchProfile: () => {},
-  shares: [],
   activeProfileUid: null,
-  setActiveProfileUid: () => {},
-  isViewingSharedAccount: false,
-  activeStudentName: null,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [shares, setShares] = useState<Share[]>([]);
-  const [activeProfileUid, setActiveProfileUid] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (uid: string) => {
     const docRef = doc(db, "profiles", uid);
@@ -52,27 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return null;
   }, []);
 
-  const fetchShares = useCallback(async (uid: string) => {
-    const guardianInviteRef = doc(db, 'guardianInvites', uid);
-    try {
-      const docSnap = await getDoc(guardianInviteRef);
-      if (docSnap.exists()) {
-        const inviteData = docSnap.data() as GuardianInvite;
-        const sharesData = Object.entries(inviteData.students).map(([studentUid, studentInfo]) => ({
-          studentUid,
-          studentEmail: studentInfo.email,
-          studentName: studentInfo.name,
-        }));
-        setShares(sharesData);
-      } else {
-        setShares([]);
-      }
-    } catch (e) {
-      console.error("Error fetching shares", e);
-      setShares([]);
-    }
-  }, []);
-  
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
     const newProfile: Omit<UserProfile, 'id'> = {
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
@@ -90,10 +59,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refetchProfile = useCallback(async () => {
     if (user) {
-        const currentActiveUid = activeProfileUid || user.uid;
-        await fetchProfile(currentActiveUid);
+        await fetchProfile(user.uid);
     }
-  }, [user, fetchProfile, activeProfileUid]);
+  }, [user, fetchProfile]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
@@ -104,56 +72,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email: firebaseUser.email,
         };
         setUser(userPayload);
-        setActiveProfileUid(firebaseUser.uid);
         
         let existingProfile = await fetchProfile(firebaseUser.uid);
         if (!existingProfile) {
           existingProfile = await createProfile(firebaseUser) as UserProfile;
         }
-        
-        await fetchShares(firebaseUser.uid);
 
       } else {
         setUser(null);
         setProfile(null);
-        setShares([]);
-        setActiveProfileUid(null);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [fetchProfile, createProfile, fetchShares]);
-
-  useEffect(() => {
-    if (activeProfileUid) {
-      fetchProfile(activeProfileUid)
-    }
-  }, [activeProfileUid, fetchProfile])
+  }, [fetchProfile, createProfile]);
   
   const logout = async () => {
     await signOut(auth);
   };
 
-  const isViewingSharedAccount = !!(user && activeProfileUid && user.uid !== activeProfileUid);
-  const activeStudentName = isViewingSharedAccount ? shares.find(s => s.studentUid === activeProfileUid)?.studentName || null : null;
-  
-  const handleSetActiveProfileUid = (uid: string | null) => {
-    if (uid === user?.uid) {
-      setActiveProfileUid(user.uid);
-    } else {
-      setActiveProfileUid(uid);
-    }
-  };
-
-
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, shares, activeProfileUid, setActiveProfileUid: handleSetActiveProfileUid, isViewingSharedAccount, activeStudentName }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, activeProfileUid: user?.uid || null }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-    

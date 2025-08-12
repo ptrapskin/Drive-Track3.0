@@ -35,13 +35,3 @@ export interface Skill {
   teachingPoints: string[];
   completed: boolean;
 }
-
-export interface Share {
-    studentUid: string;
-    studentEmail: string;
-    studentName: string;
-}
-
-export interface GuardianInvite {
-    students: { [uid: string]: { name: string, email: string } };
-}
