@@ -81,8 +81,8 @@ export default function ProfilePage() {
         email: user.email,
         dateOfBirth: dateOfBirth?.toISOString() || null,
         permitDate: permitDate?.toISOString() || null,
-        totalHoursGoal: currentProfile.totalHoursGoal || 50,
-        nightHoursGoal: currentProfile.nightHoursGoal || 10,
+        totalHoursGoal: currentProfile.totalHoursGoal || null,
+        nightHoursGoal: currentProfile.nightHoursGoal || null,
     };
 
     try {
@@ -256,7 +256,7 @@ export default function ProfilePage() {
                                     <Input
                                         id="total-hours-goal"
                                         type="number"
-                                        value={currentProfile.totalHoursGoal || 50}
+                                        value={currentProfile.totalHoursGoal || ''}
                                         onChange={(e) => setCurrentProfile({...currentProfile, totalHoursGoal: Number(e.target.value)})}
                                         placeholder="e.g. 50"
                                     />
@@ -266,7 +266,7 @@ export default function ProfilePage() {
                                     <Input
                                         id="night-hours-goal"
                                         type="number"
-                                        value={currentProfile.nightHoursGoal || 10}
+                                        value={currentProfile.nightHoursGoal || ''}
                                         onChange={(e) => setCurrentProfile({...currentProfile, nightHoursGoal: Number(e.target.value)})}
                                         placeholder="e.g. 10"
                                     />

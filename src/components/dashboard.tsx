@@ -21,9 +21,9 @@ export default function Dashboard({ sessions }: DashboardProps) {
   const { skills } = useSkills();
   const { profile, shares, setActiveProfile, isViewingSharedAccount, activeProfileEmail, resetActiveProfile } = useAuth();
 
-  const totalHoursGoal = profile?.totalHoursGoal || 50;
-  const nightHoursGoal = profile?.nightHoursGoal || 10;
-  const hasGoals = profile?.totalHoursGoal !== undefined && profile?.nightHoursGoal !== undefined;
+  const totalHoursGoal = profile?.totalHoursGoal;
+  const nightHoursGoal = profile?.nightHoursGoal;
+  const hasGoals = totalHoursGoal && nightHoursGoal && totalHoursGoal > 0 && nightHoursGoal > 0;
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(
