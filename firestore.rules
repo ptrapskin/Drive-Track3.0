@@ -1,35 +1,43 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Users can only read and update their own user document.
-    // Any authenticated user can create their own user document.
-    match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
+
+    // Helper Functions
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    // Profiles are linked to a family.
-    // Anyone in the family can read or write to the shared profile.
-    // Any authenticated user can create their own profile.
+    function userHasFamilyId(familyId) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
+    }
+    
+    // Profiles
     match /profiles/{familyId} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
-      allow create: if request.auth.uid == familyId;
-
-      // Sessions and Skills can be read/written by anyone in the family.
-      match /{allPaths=**} {
-         allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
-      }
+      allow read, write: if userHasFamilyId(familyId);
+      allow create: if isOwner(request.auth.uid) && request.resource.data.familyId == request.auth.uid;
     }
     
-    // Shares collection for invitations
-    // A user can create a share document (invite someone).
-    // A user can read/update a share if they are the invited guardian.
+    match /profiles/{familyId}/{collection}/{document} {
+      allow read, write: if userHasFamilyId(familyId);
+    }
+
+    // Users
+    match /users/{userId} {
+      // Allow any authenticated user to read from the users collection. This is needed
+      // for the userHasFamilyId() helper function to work for guardians.
+      allow read: if request.auth != null;
+      allow write: if isOwner(userId);
+      allow create: if isOwner(userId);
+    }
+    
+    // Shares
     match /shares/{shareId} {
-      allow create: if request.auth.uid != null;
-      allow read, update: if request.auth.token.email == resource.data.guardianEmail;
+      // Allow authenticated users to read and create shares.
+      allow read, create: if request.auth != null;
+      // Allow users to update or delete a share if they are the student who created it
+      // or the guardian who is being invited.
+      allow update, delete: if request.auth.token.email == resource.data.studentEmail || request.auth.token.email == resource.data.guardianEmail;
     }
   }
 }
