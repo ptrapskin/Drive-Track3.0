@@ -63,7 +63,7 @@ export default function SaveSessionDialog({
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
-    values: {
+    defaultValues: {
       duration: session.duration,
       miles: parseFloat(session.miles.toFixed(2)),
       weather: session.weather,
@@ -75,8 +75,6 @@ export default function SaveSessionDialog({
     onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay, date: new Date().toISOString() });
     setIsEditing(false);
   };
-
-  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
