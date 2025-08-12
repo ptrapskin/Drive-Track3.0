@@ -11,12 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
-import { doc, setDoc } from 'firebase/firestore';
-import { db, auth, functions } from '@/firebase';
+import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { Mail, Share2 } from 'lucide-react';
-import { httpsCallable } from 'firebase/functions';
 
 export default function ProfilePage() {
   const { user, loading, profile, logout, refetchProfile } = useAuth();
@@ -85,11 +84,20 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Could not identify your email.' });
       return;
     }
+    if (!profile?.familyId) {
+        toast({ variant: 'destructive', title: 'Could not identify your family account.' });
+        return;
+    }
 
-    const createInvite = httpsCallable(functions, 'createInvite');
     try {
-      const result = await createInvite({ studentEmail: user.email, guardianEmail });
-      console.log(result);
+      await addDoc(collection(db, 'shares'), {
+        studentEmail: user.email,
+        guardianEmail,
+        familyId: profile.familyId,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      
       toast({
         title: 'Invitation Sent!',
         description: `An invitation has been sent to ${guardianEmail}. Once they sign up, they will have access to your log.`,

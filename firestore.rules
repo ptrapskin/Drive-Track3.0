@@ -1,41 +1,35 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to get the familyId of the currently logged-in user.
-    function getUserFamilyId() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
-    }
-    
-    // Rules for the 'users' collection
+    // Users can only read and update their own user document.
+    // Any authenticated user can create their own user document.
     match /users/{userId} {
-      // Allow a user to create their own user document.
+      allow read, update: if request.auth.uid == userId;
       allow create: if request.auth.uid == userId;
-      // Allow a user to read their own user document.
-      allow read: if request.auth.uid == userId;
     }
 
-    // Rules for the 'profiles' collection and its subcollections (sessions, skills)
+    // Profiles are linked to a family.
+    // Anyone in the family can read or write to the shared profile.
+    // Any authenticated user can create their own profile.
     match /profiles/{familyId} {
-      // Allow a user to create their own profile document.
-      // The profile ID must match the familyId in their user document.
-      allow create: if request.auth.uid == request.resource.data.ownerId &&
-                       request.resource.id == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
+      allow create: if request.auth.uid == familyId;
 
-      // Allow reads and writes to the profile and its subcollections 
-      // if the user's familyId matches the profile's familyId.
-      allow read, write: if getUserFamilyId() == familyId;
-
-      // Ensure that any documents within the profile can be read/written with the same logic.
-      match /{allSubcollections=**} {
-        allow read, write: if getUserFamilyId() == familyId;
+      // Sessions and Skills can be read/written by anyone in the family.
+      match /{allPaths=**} {
+         allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
       }
     }
-
-    // Allow the 'createInvite' Cloud Function to be called by authenticated users.
-    match /invites/{inviteId} {
-       allow read, write: if false; // No direct client access
+    
+    // Shares collection for invitations
+    // A user can create a share document (invite someone).
+    // A user can read/update a share if they are the invited guardian.
+    match /shares/{shareId} {
+      allow create: if request.auth.uid != null;
+      allow read, update: if request.auth.token.email == resource.data.guardianEmail;
     }
   }
 }

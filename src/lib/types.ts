@@ -1,5 +1,4 @@
 
-
 export type RoadType = "Residential" | "Arterial" | "Highway";
 export type WeatherCondition = "Sunny" | "Cloudy" | "Rainy" | "Snowy";
 export type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
@@ -39,9 +38,10 @@ export interface Skill {
   completed: boolean;
 }
 
-export interface FamilyLink {
-    id?: string;
-    studentEmail: string;
-    guardianEmail: string;
-    status: 'pending' | 'accepted';
+export interface Share {
+  id?: string;
+  studentEmail: string;
+  guardianEmail: string;
+  familyId: string;
+  status: 'pending' | 'accepted';
 }

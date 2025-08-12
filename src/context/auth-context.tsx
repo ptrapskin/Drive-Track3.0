@@ -3,10 +3,9 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth, db, functions } from '@/firebase';
-import type { User, UserProfile } from '@/lib/types';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { auth, db } from '@/firebase';
+import type { User, UserProfile, Share } from '@/lib/types';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -52,9 +51,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setProfile(null);
     return null;
   }, []);
+  
+  const processPendingShares = async (firebaseUser: FirebaseUser) => {
+    if (!firebaseUser.email) return;
+
+    const sharesQuery = query(
+      collection(db, "shares"),
+      where("guardianEmail", "==", firebaseUser.email),
+      where("status", "==", "pending")
+    );
+
+    const querySnapshot = await getDocs(sharesQuery);
+    if (querySnapshot.empty) return;
+
+    const batch = writeBatch(db);
+    let familyId: string | null = null;
+    
+    querySnapshot.forEach(docSnap => {
+      const share = docSnap.data() as Share;
+      familyId = share.familyId; // Use the familyId from the first pending share.
+      batch.update(docSnap.ref, { status: "accepted", acceptedAt: serverTimestamp() });
+    });
+
+    if (familyId) {
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      batch.set(userDocRef, { familyId }, { merge: true });
+      await batch.commit();
+      return familyId;
+    }
+    
+    return null;
+  };
 
   const createUserAndProfile = useCallback(async(firebaseUser: FirebaseUser) => {
-    const familyId = firebaseUser.uid; // New user owns their profile initially
+    let familyId = await processPendingShares(firebaseUser);
+    
+    if (!familyId) {
+      familyId = firebaseUser.uid; // New user owns their profile initially
+    }
 
     // Create user document
     const userDoc: User = {
@@ -64,20 +98,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userDoc);
 
-    // Create profile document
-    const newProfile: Omit<UserProfile, 'id'> = {
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
-        email: firebaseUser.email,
-        dateOfBirth: null,
-        permitDate: null,
-        totalHoursGoal: 50,
-        nightHoursGoal: 10,
-        familyId: familyId,
-        ownerId: firebaseUser.uid
-    };
-    await setDoc(doc(db, "profiles", familyId), newProfile);
+    // Create profile document only if this user is starting a new family
+    if (familyId === firebaseUser.uid) {
+        const newProfile: Omit<UserProfile, 'id'> = {
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
+            email: firebaseUser.email,
+            dateOfBirth: null,
+            permitDate: null,
+            totalHoursGoal: 50,
+            nightHoursGoal: 10,
+            familyId: familyId,
+            ownerId: firebaseUser.uid
+        };
+        await setDoc(doc(db, "profiles", familyId), newProfile);
+        setProfile({ ...newProfile, id: familyId });
+    }
 
-    setProfile({ ...newProfile, id: familyId });
     return userDoc;
   }, []);
   
@@ -86,21 +122,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       if (firebaseUser) {
         let userDoc = await fetchUserDocument(firebaseUser.uid);
-
-        // This block handles linking a new guardian to a student's family
-        if (!userDoc?.familyId) {
-          const processInvite = httpsCallable(functions, 'processInvite');
-          try {
-            await processInvite({ email: firebaseUser.email });
-            // Re-fetch user doc after processing invite to get the new familyId
-            userDoc = await fetchUserDocument(firebaseUser.uid);
-          } catch(e) {
-            console.log("No pending invite found or error processing it. Will create a new profile.");
-          }
-        }
         
         if (!userDoc) {
           userDoc = await createUserAndProfile(firebaseUser);
+        } else if (!userDoc.familyId) {
+          // If user exists but has no family, check for shares
+          const updatedFamilyId = await processPendingShares(firebaseUser);
+          if (updatedFamilyId) {
+            userDoc.familyId = updatedFamilyId;
+          }
         }
 
         setUser(userDoc);
