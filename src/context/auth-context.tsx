@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/firebase';
-import type { User, UserProfile, Share } from '@/lib/types';
+import type { User, UserProfile, Share, GuardianInvite } from '@/lib/types';
 import { doc, getDoc, setDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -52,24 +52,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return null;
   }, []);
 
-  const fetchShares = useCallback(async (email: string) => {
-    const sanitizedEmail = encodeURIComponent(email);
-    const sharesQuery = query(collectionGroup(db, 'sharedWith'), where('guardianEmail', '==', email));
-    
+  const fetchShares = useCallback(async (uid: string) => {
+    const guardianInviteRef = doc(db, 'guardianInvites', uid);
     try {
-      const querySnapshot = await getDocs(sharesQuery);
-      const sharesData: Share[] = querySnapshot.docs.map(doc => {
-          const studentUid = doc.ref.parent.parent?.id;
-          const data = doc.data();
-          return {
-              studentUid: studentUid!,
-              studentEmail: data.studentEmail,
-              studentName: data.studentName
-          };
-      });
-      setShares(sharesData);
+      const docSnap = await getDoc(guardianInviteRef);
+      if (docSnap.exists()) {
+        const inviteData = docSnap.data() as GuardianInvite;
+        const sharesData = Object.entries(inviteData.students).map(([studentUid, studentInfo]) => ({
+          studentUid,
+          studentEmail: studentInfo.email,
+          studentName: studentInfo.name,
+        }));
+        setShares(sharesData);
+      } else {
+        setShares([]);
+      }
     } catch (e) {
-      console.error("Error fetching shares", e)
+      console.error("Error fetching shares", e);
       setShares([]);
     }
   }, []);
@@ -112,9 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           existingProfile = await createProfile(firebaseUser) as UserProfile;
         }
         
-        if (firebaseUser.email) {
-            await fetchShares(firebaseUser.email);
-        }
+        await fetchShares(firebaseUser.uid);
 
       } else {
         setUser(null);

@@ -3,17 +3,40 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read/write their own profile data.
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isSharedWith(studentUid) {
+      let guardianDoc = get(/databases/$(database)/documents/guardianInvites/$(request.auth.uid));
+      return guardianDoc.data.students[studentUid] != null;
+    }
+
     match /profiles/{userId} {
-      allow read, update, delete: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
+      // Any authenticated user can create their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Allow read/write access to subcollections if the user is the owner
-      // OR if they are a guardian the profile has been shared with.
-      match /{subcollection}/{docId} {
-         allow read, write: if request.auth.uid == userId || 
-                              exists(/databases/$(database)/documents/profiles/$(userId)/sharedWith/$(request.auth.token.email.replace('@', '%40')));
+      // Users can read/update their own profile
+      // Guardians can read the student's profile if shared
+      allow read, update: if isOwner(userId) || isSharedWith(userId);
+
+      match /sessions/{sessionId} {
+        // Owner or a shared guardian can read/write sessions
+        allow read, write: if isOwner(userId) || isSharedWith(userId);
       }
+
+      match /skills/{skillId} {
+        // Owner or a shared guardian can read/write skills
+        allow read, write: if isOwner(userId) || isSharedWith(userId);
+      }
+    }
+    
+    match /guardianInvites/{guardianId} {
+        // A user can only write to their own guardian invite document
+        allow write: if isOwner(guardianId);
+        // A user can read their own invite doc
+        allow read: if isOwner(guardianId);
     }
   }
 }

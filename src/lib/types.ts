@@ -41,3 +41,7 @@ export interface Share {
     studentEmail: string;
     studentName: string;
 }
+
+export interface GuardianInvite {
+    students: { [uid: string]: { name: string, email: string } };
+}
