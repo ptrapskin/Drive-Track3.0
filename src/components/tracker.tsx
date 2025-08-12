@@ -76,7 +76,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
 
   const fetchWeather = async (lat: number, lon: number) => {
     try {
-        const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+        const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
         if (!apiKey) {
             console.error("OpenWeather API key is missing.");
             return;
@@ -284,3 +284,5 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     </>
   );
 }
+
+    
