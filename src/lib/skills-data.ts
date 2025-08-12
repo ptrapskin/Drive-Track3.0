@@ -11,7 +11,7 @@ export const initialSkills: Skill[] = [
         'Make sure windows and mirrors are clean and unobstructed.',
         'Ensure windshield wiper blades are functional and fluid levels are adequate.',
       ],
-      completed: true,
+      completed: false,
     },
     {
       id: 2,
@@ -23,7 +23,7 @@ export const initialSkills: Skill[] = [
         'Position the steering wheel 10–12 inches from chest and below shoulder height.',
         'Adjust mirrors using the blind-zone reduction method for full coverage.',
       ],
-      completed: true,
+      completed: false,
     },
     {
       id: 3,
@@ -71,7 +71,7 @@ export const initialSkills: Skill[] = [
         'Accelerate gradually to avoid wheel spin or jerky starts.',
         'Practice stopping at a consistent distance before stop lines.',
       ],
-      completed: true,
+      completed: false,
     },
     {
       id: 7,
