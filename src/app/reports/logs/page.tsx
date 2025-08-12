@@ -12,7 +12,7 @@ import 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { useSessions } from '@/context/sessions-context';
-import DriveTrackLogo from '@/components/drive-track-logo';
+import DashboardHeader from '@/components/dashboard-header';
 import type { UserProfile } from '@/lib/types';
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -21,7 +21,7 @@ interface jsPDFWithAutoTable extends jsPDF {
 
 export default function LogsPage() {
   const { sessions, loading: sessionsLoading } = useSessions();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -29,6 +29,11 @@ export default function LogsPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+  
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(
@@ -123,12 +128,16 @@ export default function LogsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen">
+       <DashboardHeader 
+        userEmail={activeProfileEmail || user.email}
+        onLogout={handleLogout}
+        isViewingSharedAccount={isViewingSharedAccount}
+       />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8 flex flex-col md:flex-row justify-between md:items-center">
-            <div>
+            <div className="md:hidden">
                  <div className="flex items-center gap-3 mb-2">
-                    <DriveTrackLogo />
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                         Full Driving Log
                     </h1>

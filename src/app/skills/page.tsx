@@ -10,10 +10,10 @@ import { Award, CheckCircle2 } from "lucide-react";
 import SkillItem from "@/components/skill-item";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import DriveTrackLogo from "@/components/drive-track-logo";
+import DashboardHeader from "@/components/dashboard-header";
 
 export default function SkillsPage() {
-  const { user, loading, isViewingSharedAccount } = useAuth();
+  const { user, loading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
   const router = useRouter();
   const { skills, completedSkillsCount } = useSkills();
   const totalSkills = skills.length;
@@ -24,6 +24,11 @@ export default function SkillsPage() {
       router.push("/login");
     }
   }, [user, loading, router]);
+  
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
 
   if (loading || !user) {
     return (
@@ -34,11 +39,15 @@ export default function SkillsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen">
+       <DashboardHeader 
+        userEmail={activeProfileEmail || user.email}
+        onLogout={handleLogout}
+        isViewingSharedAccount={isViewingSharedAccount}
+       />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8">
+        <header className="mb-8 md:hidden">
           <div className="flex items-center gap-3 mb-2">
-            <DriveTrackLogo />
             <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
               Driving Skills
             </h1>

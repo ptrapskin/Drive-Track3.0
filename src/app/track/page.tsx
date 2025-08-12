@@ -9,12 +9,12 @@ import { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ManualLogForm from "@/components/manual-log-form";
 import { Gauge, PencilLine } from "lucide-react";
-import DriveTrackLogo from "@/components/drive-track-logo";
+import DashboardHeader from "@/components/dashboard-header";
 
 
 export default function TrackPage() {
     const { addSession } = useSessions();
-    const { user, loading } = useAuth();
+    const { user, loading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -22,6 +22,11 @@ export default function TrackPage() {
         router.push('/login');
         }
     }, [user, loading, router]);
+    
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
+    };
 
     if (loading || !user) {
         return (
@@ -32,12 +37,16 @@ export default function TrackPage() {
     }
 
     return (
-        <main className="min-h-screen bg-background text-foreground">
+        <main className="min-h-screen">
+            <DashboardHeader 
+                userEmail={activeProfileEmail || user.email}
+                onLogout={handleLogout}
+                isViewingSharedAccount={isViewingSharedAccount}
+            />
             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-                 <header className="mb-8">
+                 <header className="mb-8 md:hidden">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                        <DriveTrackLogo />
                         <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                             Log a Session
                         </h1>

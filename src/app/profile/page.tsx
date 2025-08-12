@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Share2, Trash2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import DriveTrackLogo from '@/components/drive-track-logo';
+import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
@@ -24,7 +24,7 @@ interface Share {
 }
 
 export default function ProfilePage() {
-  const { user, loading, profile, isViewingSharedAccount } = useAuth();
+  const { user, loading, profile, isViewingSharedAccount, logout, activeProfileEmail } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -61,6 +61,11 @@ export default function ProfilePage() {
       fetchShares();
     }
   }, [user, loading, router, fetchShares]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
   
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,12 +147,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen">
+        <DashboardHeader 
+            userEmail={activeProfileEmail || user.email}
+            onLogout={handleLogout}
+            isViewingSharedAccount={isViewingSharedAccount}
+        />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8 flex justify-between items-center md:hidden">
              <div>
                  <div className="flex items-center gap-3 mb-2">
-                    <DriveTrackLogo />
                     <h1 className="text-4xl font-bold font-headline tracking-tight text-primary">
                         User Profile
                     </h1>
