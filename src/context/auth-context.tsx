@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
     const newProfile: UserProfile = {
+      name: firebaseUser.displayName || 'New User',
       email: firebaseUser.email,
       totalHoursGoal: 50,
       nightHoursGoal: 10,

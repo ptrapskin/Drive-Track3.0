@@ -20,6 +20,7 @@ export interface User {
 
 export interface UserProfile {
   id?: string;
+  name?: string;
   email: string | null;
   dateOfBirth?: string;
   permitDate?: string;

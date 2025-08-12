@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Share2, Trash2 } from 'lucide-react';
+import { Share2, Trash2, KeyRound } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db, auth } from '@/firebase';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
 
 interface Share {
@@ -31,6 +32,9 @@ export default function ProfilePage() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(profile);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
+  
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [shareEmail, setShareEmail] = useState('');
   const [sharedWith, setSharedWith] = useState<Share[]>([]);
@@ -90,6 +94,34 @@ export default function ProfilePage() {
             title: "Error Saving Profile",
             description: error.message,
         });
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+        description: 'Please re-enter your new password.',
+      });
+      return;
+    }
+    if (!auth.currentUser) return;
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+      toast({
+        title: 'Password Updated',
+        description: 'Your password has been changed successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Changing Password',
+        description: error.message,
+      });
     }
   };
   
@@ -178,7 +210,7 @@ export default function ProfilePage() {
         )}
 
         <div className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Your Information</CardTitle>
@@ -188,6 +220,25 @@ export default function ProfilePage() {
                     <form onSubmit={handleSave} className="space-y-6">
                         <fieldset disabled={isViewingSharedAccount} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input
+                                        id="name"
+                                        type="text"
+                                        value={currentProfile.name || ''}
+                                        onChange={(e) => setCurrentProfile({...currentProfile, name: e.target.value})}
+                                        placeholder="e.g. Alex Doe"
+                                    />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="email">Email Address</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={user.email || ''}
+                                        disabled
+                                    />
+                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="dob">Date of Birth</Label>
                                     <DatePicker date={dateOfBirth} setDate={setDateOfBirth} />
@@ -224,6 +275,48 @@ export default function ProfilePage() {
                     </form>
                 </CardContent>
             </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <KeyRound className="w-5 h-5"/>
+                        Security
+                    </CardTitle>
+                    <CardDescription>Update your password.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleChangePassword} className="space-y-6">
+                         <fieldset disabled={isViewingSharedAccount} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <Input
+                                        id="new-password"
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Enter new password"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                    <Input
+                                        id="confirm-password"
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Confirm new password"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button type="submit">Change Password</Button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </CardContent>
+             </Card>
           </div>
           <div className="md:col-span-1">
             <Card>
