@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { useSkills } from "@/context/skills-context";
@@ -11,12 +11,17 @@ import SkillItem from "@/components/skill-item";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import DashboardHeader from "@/components/dashboard-header";
+import { initialSkills } from "@/lib/skills-data";
+import { db } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function SkillsPage() {
-  const { user, loading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
+  const { user, loading, logout, activeProfileEmail, isViewingSharedAccount, activeProfileUid } = useAuth();
   const router = useRouter();
-  const { skills, completedSkillsCount } = useSkills();
-  const totalSkills = skills.length;
+  const { skills, completedSkillsCount, loading: skillsLoading } = useSkills();
+  const [initialized, setInitialized] = useState(false);
+  
+  const totalSkills = initialSkills.length;
   const progressPercentage = totalSkills > 0 ? (completedSkillsCount / totalSkills) * 100 : 0;
 
   useEffect(() => {
@@ -25,18 +30,45 @@ export default function SkillsPage() {
     }
   }, [user, loading, router]);
   
+  useEffect(() => {
+    // If skills are loaded and the list is empty, this is the first visit.
+    // Initialize the skills from the template.
+    const initialize = async () => {
+      if (!skillsLoading && skills.length === 0 && activeProfileUid && !isViewingSharedAccount) {
+        try {
+          const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
+          const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+          await setDoc(docRef, { skills: newSkills });
+          // The context will refetch, but we can optimistically update here if needed
+          // For now, we'll let the context's listener handle the update.
+        } catch (error) {
+          console.error("Failed to initialize skills:", error);
+        }
+      }
+      setInitialized(true);
+    };
+
+    if (activeProfileUid) {
+      initialize();
+    }
+  }, [skillsLoading, skills, activeProfileUid, isViewingSharedAccount]);
+
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  if (loading || !user) {
+  const pageLoading = loading || (skillsLoading && !initialized);
+
+  if (pageLoading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-2xl">Loading...</div>
       </div>
     );
   }
+
+  const skillsToDisplay = skills.length > 0 ? skills : initialSkills.map(s => ({...s, completed: false}));
 
   return (
     <main className="min-h-screen">
@@ -78,7 +110,7 @@ export default function SkillsPage() {
         </Card>
 
         <Accordion type="single" collapsible className="w-full">
-          {skills.map((skill) => (
+          {skillsToDisplay.map((skill) => (
             <SkillItem key={skill.id} skill={skill} />
           ))}
         </Accordion>

@@ -44,17 +44,12 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
         const skillsData = docSnap.data().skills as Skill[];
         setSkills(skillsData);
     } else {
-        // If no skills doc, create one from the template
-        const newSkills = skillsTemplate.map(skill => ({ ...skill, completed: false }));
-        setSkills(newSkills);
-        try {
-            await setDoc(docRef, { skills: newSkills });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error initializing skills', description: error.message });
-        }
+        // If no skills doc exists, start with an empty array.
+        // Skills will be created on-demand if the user visits the skills page.
+        setSkills([]);
     }
     setLoading(false);
-  }, [activeProfileUid, toast]);
+  }, [activeProfileUid]);
 
   useEffect(() => {
     fetchSkills();
@@ -88,3 +83,4 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useSkills = () => useContext(SkillsContext);
+
