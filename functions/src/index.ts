@@ -60,7 +60,9 @@ export const processInvite = onCall(async (request) => {
       .get();
 
   if (invitesQuery.empty) {
-    throw new HttpsError("not-found", "No pending invites for this user.");
+    // This is not an error, it just means there are no pending invites.
+    // We can return a success message indicating this.
+    return {success: true, message: "No pending invites for this user."};
   }
 
   const batch = db.batch();
