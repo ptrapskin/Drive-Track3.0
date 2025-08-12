@@ -23,6 +23,7 @@ export default function Dashboard({ sessions }: DashboardProps) {
 
   const totalHoursGoal = profile?.totalHoursGoal || 50;
   const nightHoursGoal = profile?.nightHoursGoal || 10;
+  const hasGoals = profile?.totalHoursGoal !== undefined && profile?.nightHoursGoal !== undefined;
 
   const { totalHours, totalMiles, nightHours } = useMemo(() => {
     const totals = sessions.reduce(
@@ -62,23 +63,25 @@ export default function Dashboard({ sessions }: DashboardProps) {
           </CardContent>
         </Card>
       )}
-       <section>
-        <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
-         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ProgressCard 
-              title="Total Hours Goal"
-              currentValue={totalHours}
-              goalValue={totalHoursGoal}
-              unit="hours"
-            />
-            <ProgressCard 
-              title="Night Hours Goal"
-              currentValue={nightHours}
-              goalValue={nightHoursGoal}
-              unit="hours"
-            />
-         </div>
-      </section>
+       {hasGoals && (
+        <section>
+          <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ProgressCard 
+                title="Total Hours Goal"
+                currentValue={totalHours}
+                goalValue={totalHoursGoal}
+                unit="hours"
+              />
+              <ProgressCard 
+                title="Night Hours Goal"
+                currentValue={nightHours}
+                goalValue={nightHoursGoal}
+                unit="hours"
+              />
+          </div>
+        </section>
+       )}
       <section>
         <h2 className="text-2xl font-bold font-headline mb-4">Overall Progress</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

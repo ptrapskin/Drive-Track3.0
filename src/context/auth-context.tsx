@@ -58,14 +58,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   
   const createProfile = useCallback(async(firebaseUser: FirebaseUser) => {
-    const newProfile: UserProfile = {
+    const newProfile: Omit<UserProfile, 'totalHoursGoal' | 'nightHoursGoal' | 'dateOfBirth' | 'permitDate'> = {
       name: firebaseUser.displayName || 'New User',
       email: firebaseUser.email,
-      totalHoursGoal: 50,
-      nightHoursGoal: 10,
     };
     await setDoc(doc(db, "profiles", firebaseUser.uid), newProfile);
-    setProfile(newProfile);
+    setProfile(newProfile as UserProfile);
   }, []);
 
   const fetchShares = useCallback(async (email: string) => {
