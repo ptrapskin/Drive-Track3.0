@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Static export (replaces the old `next export` command)
-  output: 'export',
-
-  // Safer routing for static hosting / webview bundles
-  trailingSlash: true,
+  // Switched from 'export' to 'standalone' for App Hosting compatibility
+  output: 'standalone',
 
   // Skip type and lint errors during build (optional; remove if you want strict CI)
   typescript: {
@@ -14,9 +11,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // Next/Image tweaks for static export
+  // Next/Image remote patterns are still useful
   images: {
-    unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
     ],
