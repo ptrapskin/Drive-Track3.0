@@ -33,12 +33,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Check, Edit, Trash2, Play, Save } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SaveSessionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  session: Omit<Session, "id">;
+  session: Omit<Session, "id" | "date">;
   onSave: (session: Omit<Session, "id">) => void;
   onResume: () => void;
   onDiscard: () => void;
@@ -70,11 +70,24 @@ export default function SaveSessionDialog({
       timeOfDay: session.timeOfDay,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      duration: session.duration,
+      miles: parseFloat(session.miles.toFixed(2)),
+      weather: session.weather,
+      timeOfDay: session.timeOfDay,
+    });
+  }, [session, form]);
   
   const onSubmit = (data: z.infer<typeof sessionSchema>) => {
     onSave({ ...session, ...data, timeOfDay: data.timeOfDay as TimeOfDay, date: new Date().toISOString() });
     setIsEditing(false);
   };
+
+  if (!isOpen) {
+      return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -166,7 +179,7 @@ export default function SaveSessionDialog({
               <div className="space-y-2">
                  <Label>Road Types Driven</Label>
                  <div className="flex flex-wrap gap-2">
-                    {session.roadTypes.map(type => <Badge key={type} variant="secondary">{type}</Badge>)}
+                    {Array.from(session.roadTypes).map(type => <Badge key={type} variant="secondary">{type}</Badge>)}
                  </div>
               </div>
 
