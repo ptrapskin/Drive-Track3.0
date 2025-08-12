@@ -1,13 +1,36 @@
 
 "use client";
 
+import { useEffect } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, BarChart, Award, FileDown } from 'lucide-react';
 import DriveTrackLogo from '@/components/drive-track-logo';
-import Image from 'next/image';
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If the auth state is determined and there is a user, redirect to dashboard.
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+  // While checking auth, show a loading screen to prevent flashing the landing page.
+  // Or if the user is logged in, this will show while redirecting.
+  if (loading || user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Only show the landing page content if auth is checked and there's no user.
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm">
