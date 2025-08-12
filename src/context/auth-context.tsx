@@ -57,28 +57,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const familyId = firebaseUser.uid; // New user owns their profile initially
 
     // Create user document
-    const userDoc: Omit<User, 'uid'> = {
+    const userDoc: User = {
+      uid: firebaseUser.uid,
       email: firebaseUser.email,
       familyId: familyId,
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userDoc);
 
     // Create profile document
-    const newProfile: UserProfile = {
-      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
-      email: firebaseUser.email,
-      dateOfBirth: null,
-      permitDate: null,
-      totalHoursGoal: 50,
-      nightHoursGoal: 10,
-      familyId: familyId,
-      ownerId: firebaseUser.uid
+    const newProfile: Omit<UserProfile, 'id'> = {
+        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
+        email: firebaseUser.email,
+        dateOfBirth: null,
+        permitDate: null,
+        totalHoursGoal: 50,
+        nightHoursGoal: 10,
+        familyId: familyId,
+        ownerId: firebaseUser.uid
     };
     await setDoc(doc(db, "profiles", familyId), newProfile);
 
-    const createdUser = { ...userDoc, uid: firebaseUser.uid };
     setProfile({ ...newProfile, id: familyId });
-    return createdUser;
+    return userDoc;
   }, []);
   
   useEffect(() => {
@@ -87,15 +87,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (firebaseUser) {
         let userDoc = await fetchUserDocument(firebaseUser.uid);
 
-        if (!userDoc) {
-          // Check if this user was invited before creating a new profile
+        // This block handles linking a new guardian to a student's family
+        if (!userDoc?.familyId) {
           const processInvite = httpsCallable(functions, 'processInvite');
           try {
             await processInvite({ email: firebaseUser.email });
-            // Re-fetch user doc after processing invite
+            // Re-fetch user doc after processing invite to get the new familyId
             userDoc = await fetchUserDocument(firebaseUser.uid);
           } catch(e) {
-            console.log("No pending invite found or error processing it. Creating new profile.");
+            console.log("No pending invite found or error processing it. Will create a new profile.");
           }
         }
         
@@ -129,8 +129,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await signOut(auth);
   };
 
+  // The activeProfileUid should be the familyId, as that's what links users.
+  const activeProfileUid = profile?.id || null;
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, activeProfileUid: profile?.id || null }}>
+    <AuthContext.Provider value={{ user, loading, logout, profile, refetchProfile, activeProfileUid }}>
       {children}
     </AuthContext.Provider>
   );
