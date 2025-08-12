@@ -19,7 +19,6 @@ export default function SkillsPage() {
   const { user, loading, logout, activeProfileEmail, isViewingSharedAccount, activeProfileUid } = useAuth();
   const router = useRouter();
   const { skills, completedSkillsCount, loading: skillsLoading } = useSkills();
-  const [initialized, setInitialized] = useState(false);
   
   const totalSkills = initialSkills.length;
   const progressPercentage = totalSkills > 0 ? (completedSkillsCount / totalSkills) * 100 : 0;
@@ -30,35 +29,23 @@ export default function SkillsPage() {
     }
   }, [user, loading, router]);
   
-  useEffect(() => {
-    // If skills are loaded and the list is empty, this is the first visit.
-    // Initialize the skills from the template.
-    const initialize = async () => {
-      if (!skillsLoading && skills.length === 0 && activeProfileUid && !isViewingSharedAccount) {
-        try {
-          const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
-          const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
-          await setDoc(docRef, { skills: newSkills });
-          // The context will refetch, but we can optimistically update here if needed
-          // For now, we'll let the context's listener handle the update.
-        } catch (error) {
-          console.error("Failed to initialize skills:", error);
-        }
-      }
-      setInitialized(true);
-    };
-
-    if (activeProfileUid) {
-      initialize();
-    }
-  }, [skillsLoading, skills, activeProfileUid, isViewingSharedAccount]);
-
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  const pageLoading = loading || (skillsLoading && !initialized);
+  const initializeSkills = async () => {
+    if (!activeProfileUid || isViewingSharedAccount) return;
+    try {
+      const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
+      const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+      await setDoc(docRef, { skills: newSkills });
+    } catch (error) {
+      console.error("Failed to initialize skills:", error);
+    }
+  };
+
+  const pageLoading = loading || skillsLoading;
 
   if (pageLoading || !user) {
     return (
@@ -67,8 +54,6 @@ export default function SkillsPage() {
       </div>
     );
   }
-
-  const skillsToDisplay = skills.length > 0 ? skills : initialSkills.map(s => ({...s, completed: false}));
 
   return (
     <main className="min-h-screen">
@@ -109,11 +94,22 @@ export default function SkillsPage() {
             </CardContent>
         </Card>
 
-        <Accordion type="single" collapsible className="w-full">
-          {skillsToDisplay.map((skill) => (
-            <SkillItem key={skill.id} skill={skill} />
-          ))}
-        </Accordion>
+        {skills.length === 0 && !isViewingSharedAccount ? (
+            <Card>
+                <CardContent className="pt-6 text-center">
+                    <p className="mb-4">You haven't started tracking your skills yet.</p>
+                    <button onClick={initializeSkills} className="bg-primary text-primary-foreground px-4 py-2 rounded-md">
+                      Initialize Skills List
+                    </button>
+                </CardContent>
+            </Card>
+        ) : (
+            <Accordion type="single" collapsible className="w-full">
+            {skills.map((skill) => (
+                <SkillItem key={skill.id} skill={skill} />
+            ))}
+            </Accordion>
+        )}
       </div>
     </main>
   );
