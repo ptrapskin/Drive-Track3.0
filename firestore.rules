@@ -1,28 +1,44 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Profiles can be created by any authenticated user for their own UID.
-    // Users can only read or update their own profile.
-    match /profiles/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
 
-      // Users can read/write to their own sessions and skills subcollections.
-      match /{subcollection}/{docId} {
-        allow read, write: if request.auth.uid == userId;
-      }
+    // Helper function to check if a user is a designated guardian for another user.
+    function isGuardian(studentUid) {
+      // The user is a guardian if a 'share' document exists where the guardian's email
+      // matches the requestor's email and the student's UID matches.
+      return exists(/databases/$(database)/documents/shares/$(request.auth.uid)_$(studentUid)) ||
+             exists(/databases/$(database)/documents/shares/$(studentUid)_$(request.auth.uid)) ||
+             (get(/databases/$(database)/documents/shares/$(request.resource.data.studentUid)_$(request.resource.data.guardianEmail)).data.guardianEmail == request.auth.token.email) ||
+             (exists(/databases/$(database)/documents/shares?studentUid=$(studentUid)&guardianEmail=$(request.auth.token.email)));
+    }
+
+    // Profiles can be read or written by the owner.
+    match /profiles/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Any authenticated user can create a profile.
     }
     
-    // Sharing Rules:
-    // A user can create a 'share' doc if they are the student (studentUid matches their own uid).
-    // A student can read shares they created.
-    // A guardian can read shares where their email is the guardianEmail.
+    // Sessions can be read or written by the owner or a designated guardian.
+    match /profiles/{studentUid}/sessions/{sessionId} {
+      allow read, write: if request.auth != null && 
+                           (request.auth.uid == studentUid || 
+                            isGuardian(studentUid));
+    }
+    
+    // Skills can be read or written by the owner or a designated guardian.
+    match /profiles/{studentUid}/skills/{skillId} {
+       allow read, write: if request.auth != null && 
+                           (request.auth.uid == studentUid || 
+                            isGuardian(studentUid));
+    }
+
+    // Shares can be created by the student (owner of the profile)
+    // and read by the invited guardian.
     match /shares/{shareId} {
-      allow create: if request.auth.uid == request.resource.data.studentUid;
-      allow read: if request.auth.uid == resource.data.studentUid || request.auth.token.email == resource.data.guardianEmail;
+      allow create: if request.auth != null && request.resource.data.studentUid == request.auth.uid;
+      allow read: if request.auth != null && get(resource.data).data.guardianEmail == request.auth.token.email;
+      // No update/delete for now to keep it simple.
     }
   }
 }
