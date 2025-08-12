@@ -28,13 +28,13 @@ export default function RootLayout({
         <AuthProvider>
           <SessionsProvider>
             <SkillsProvider>
-              <div className="md:flex">
-                <MainNav />
-                <main className="flex-1 md:ml-64 lg:ml-72">
-                    <div className="pb-16 md:pb-0">
+              <div className="flex flex-col">
+                <main className="flex-1">
+                    <div className="pb-16">
                         {children}
                     </div>
                 </main>
+                <MainNav />
               </div>
             </SkillsProvider>
           </SessionsProvider>
