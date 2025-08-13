@@ -33,18 +33,17 @@ export const SessionsProvider = ({ children }: { children: React.ReactNode }) =>
   const fetchSessions = useCallback(async () => {
     if (authLoading) return; // Wait for auth to finish loading
 
-    if (!activeProfileUid) {
-        setSessions([]);
-        setLoading(false);
-        return;
-    };
+    setLoading(true);
     try {
-        setLoading(true);
+      if (activeProfileUid) {
         const sessionsCollection = collection(db, 'profiles', activeProfileUid, 'sessions');
         const q = query(sessionsCollection, orderBy('date', 'desc'));
         const querySnapshot = await getDocs(q);
         const sessionsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session));
         setSessions(sessionsData);
+      } else {
+        setSessions([]);
+      }
     } catch (error: any) {
         toast({ variant: 'destructive', title: "Error fetching sessions", description: error.message });
     } finally {

@@ -33,20 +33,18 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchSkills = useCallback(async () => {
     if (authLoading) return; // Wait for auth to finish loading
 
-    if (!activeProfileUid) {
-        setSkills([]);
-        setLoading(false);
-        return;
-    };
-
     setLoading(true);
-    const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
     try {
-        const docSnap = await getDoc(docRef);
+        if (activeProfileUid) {
+            const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+            const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            const skillsData = docSnap.data().skills as Skill[];
-            setSkills(skillsData);
+            if (docSnap.exists()) {
+                const skillsData = docSnap.data().skills as Skill[];
+                setSkills(skillsData);
+            } else {
+                setSkills([]);
+            }
         } else {
             setSkills([]);
         }
