@@ -48,14 +48,37 @@ export default function SignupPage() {
       });
       return;
     }
+    
+    console.log('Attempting signup with email:', email);
+    console.log('Firebase auth object:', auth);
+    console.log('Environment check:', {
+      isCapacitor: typeof window !== 'undefined' && (window as any).Capacitor !== undefined,
+      userAgent: navigator.userAgent
+    });
+    
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      console.log('Calling createUserWithEmailAndPassword...');
+      
+      // Add timeout to prevent infinite hanging (increased for simulator)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Authentication timeout - request took too long')), 20000);
+      });
+      
+      const authPromise = createUserWithEmailAndPassword(auth, email, password);
+      
+      const userCredential = await Promise.race([authPromise, timeoutPromise]) as any;
+      console.log('Signup successful:', userCredential.user.uid);
       router.push('/dashboard');
     } catch (error: any) {
+      console.error('Signup error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
-        description: error.message,
+        description: `Error: ${error.code || 'Unknown error'} - ${error.message}`,
       });
     }
   };

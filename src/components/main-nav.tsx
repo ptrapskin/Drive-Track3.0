@@ -34,8 +34,8 @@ export default function MainNav() {
   }
 
   return (
-    <footer className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t print:hidden">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
+    <footer className="fixed bottom-0 left-0 z-50 w-full bg-background border-t print:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="grid h-16 max-w-lg grid-cols-5 mx-auto font-medium">
         {navItems.map((item) => (
           <Link
             key={item.href}

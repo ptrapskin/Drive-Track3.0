@@ -35,7 +35,6 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  console.log('AuthProvider initializing...');
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [shares, setShares] = useState<Share[]>([]);
@@ -45,15 +44,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [activeProfileUid, setActiveProfileUid] = useState<string | null>(null);
   const [activeProfileEmail, setActiveProfileEmail] = useState<string | null>(null);
   const isViewingSharedAccount = user ? activeProfileUid !== user.uid : false;
-
-  // Debug state changes
-  useEffect(() => {
-    console.log('Auth state update:', { 
-      user: user ? { uid: user.uid, email: user.email } : null, 
-      loading, 
-      authInitialized 
-    });
-  }, [user, loading, authInitialized]);
 
   const fetchProfile = useCallback(async (uid: string) => {
     try {
@@ -139,17 +129,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     console.log('Setting up auth state listener');
-    console.log('Auth object:', auth);
-    console.log('Auth app:', auth.app.name);
     let unsubscribe: (() => void) | null = null;
     
     try {
       unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        console.log('Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}, Email: ${firebaseUser.email}` : 'No user');
+        console.log('Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}` : 'No user');
         
         try {
           if (firebaseUser) {
-            console.log('Processing authenticated user...');
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -161,14 +148,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (!existingProfile) {
               console.log('Creating new profile for user');
               existingProfile = await createProfile(firebaseUser) as UserProfile;
-            } else {
-              console.log('Profile found for user');
             }
 
             if (firebaseUser.email) {
                 await fetchShares(firebaseUser.email);
             }
-            console.log('User setup complete');
           } else {
             console.log('User signed out, clearing state');
             setUser(null);
@@ -180,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           console.error('Error in auth state change handler:', error);
         } finally {
-          console.log('Auth loading finished, setting loading to false');
+          console.log('Auth loading finished');
           setLoading(false);
           setAuthInitialized(true);
         }

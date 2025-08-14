@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Switched from 'export' to 'standalone' for App Hosting compatibility
-  output: 'standalone',
+  // Use 'export' for static export compatible with Capacitor
+  output: 'export',
+  
+  // Disable image optimization for static export
+  images: {
+    unoptimized: true,
+  },
 
   // Skip type and lint errors during build (optional; remove if you want strict CI)
   typescript: {
@@ -11,12 +16,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // Next/Image remote patterns are still useful
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-    ],
-  },
+  // Trailing slash for consistent routing
+  trailingSlash: true,
 };
 
 module.exports = nextConfig;

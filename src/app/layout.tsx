@@ -28,9 +28,9 @@ export default function RootLayout({
         <AuthProvider>
           <SessionsProvider>
             <SkillsProvider>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-h-screen">
                 <main className="flex-1 bg-muted/40">
-                    <div className="pb-16">
+                    <div className="pb-16 min-h-screen" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         {children}
                     </div>
                 </main>

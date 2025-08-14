@@ -10,20 +10,38 @@ import Image from 'next/image';
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm">
+      <header className="px-4 lg:px-6 h-16 flex items-center shadow-sm bg-background/95 backdrop-blur-sm sticky top-0 z-50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <Link href="/" className="flex items-center justify-center gap-2">
           <DriveTrackLogo />
           <span className="text-xl font-bold text-primary">Drive-Track</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto flex gap-2 sm:gap-4">
           <Link
             href="/login"
-            className="text-sm font-medium hover:underline underline-offset-4"
+            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
           >
             Login
           </Link>
-          <Button asChild>
-             <Link href="/signup">Get Started</Link>
+          <Link
+            href="/simple-login"
+            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
+          >
+            Test
+          </Link>
+          <Link
+            href="/test-dashboard"
+            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/debug"
+            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
+          >
+            Debug
+          </Link>
+          <Button asChild size="sm">
+             <Link href="/signup">Start</Link>
           </Button>
         </nav>
       </header>

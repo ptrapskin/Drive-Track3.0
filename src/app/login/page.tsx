@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, signInWithGoogle } from '@/firebase';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,29 +31,118 @@ export default function LoginPage() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    console.log('Login page - Auth state:', { 
+      user: !!user, 
+      loading, 
+      userUid: user?.uid,
+      userEmail: user?.email
+    });
     if (!loading && user) {
+      console.log('User authenticated, redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
+    console.log('Attempting login with email:', email);
+    console.log('Environment check:', {
+      isCapacitor: typeof window !== 'undefined' && (window as any).Capacitor !== undefined,
+      userAgent: navigator.userAgent
+    });
+    
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
+      console.log('Calling signInWithEmailAndPassword...');
+      
+      // Check network connectivity first
+      const networkCheck = async () => {
+        try {
+          const response = await fetch('https://identitytoolkit.googleapis.com/', { 
+            method: 'HEAD',
+            mode: 'no-cors'
+          });
+          console.log('Network connectivity check passed');
+          return true;
+        } catch (error) {
+          console.warn('Network connectivity check failed:', error);
+          return false;
+        }
+      };
+      
+      const isConnected = await networkCheck();
+      if (!isConnected) {
+        throw new Error('Network connectivity check failed - please check your internet connection');
+      }
+      
+      // Use the regular Firebase web SDK
+      console.log('About to call signInWithEmailAndPassword...');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful:', {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        emailVerified: userCredential.user.emailVerified
+      });
+      
+      // Don't redirect immediately - let the auth context handle the redirect
+      // The useEffect above will redirect when user state updates
+      console.log('Login completed, waiting for auth context to update...');
+      
+      // Add a timeout safety net
+      setTimeout(() => {
+        console.log('Login timeout - checking auth state manually');
+        if (auth.currentUser) {
+          console.log('Auth has current user, forcing redirect');
+          router.push('/dashboard');
+        } else {
+          console.error('No current user after login - something went wrong');
+        }
+      }, 5000);
+      
     } catch (error: any) {
+      console.error('Login error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+        fullError: error
+      });
+      
+      // Check if this is a network/timeout issue
+      if (error.code === 'auth/network-request-failed' || error.message?.includes('timeout')) {
+        console.error('Network/timeout error detected');
+      }
+      
+      // Better error messages for common Firebase auth errors
+      let errorMessage = error.message;
+      if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error - please check your internet connection and try again';
+      } else if (error.code === 'auth/timeout') {
+        errorMessage = 'Request timed out - please try again';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password';
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message,
+        description: errorMessage,
       });
+    } finally {
+      console.log('Login attempt finished, setting isLoggingIn to false');
+      setIsLoggingIn(false);
     }
   };
   
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -64,10 +153,11 @@ export default function LoginPage() {
     }
   };
 
-  if (loading || user) {
+  if (loading || user || isLoggingIn) {
+      const loadingMessage = isLoggingIn ? 'Logging in...' : 'Loading...';
       return (
         <div className="flex justify-center items-center min-h-screen">
-            <div className="text-2xl">Loading...</div>
+            <div className="text-2xl">{loadingMessage}</div>
         </div>
     );
   }
@@ -113,8 +203,8 @@ export default function LoginPage() {
                 suppressHydrationWarning
               />
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Logging in...' : 'Login'}
             </Button>
           </form>
           <div className="relative my-4">
