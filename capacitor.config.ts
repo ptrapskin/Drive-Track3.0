@@ -23,6 +23,7 @@ const config: CapacitorConfig = {
     },
     FirebaseAuthentication: {
       skipNativeAuth: false,
+      providers: ['google.com'],
     },
     Filesystem: {
       iosUseDocumentsDirectory: true,

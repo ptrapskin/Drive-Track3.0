@@ -54,18 +54,13 @@ export const signInWithGoogle = async () => {
     try {
       console.log('About to call FirebaseAuthentication.signInWithGoogle()...');
       
-      // Check if plugin is properly configured
+      // For iOS, we need to ensure proper configuration
       console.log('Checking Firebase Authentication plugin configuration...');
       
-      // Shorter timeout for testing - 10 seconds
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Google Sign-In timeout after 10 seconds - this might be normal in iOS Simulator')), 10000);
-      });
+      // Call the plugin directly without timeout for better error handling
+      console.log('Calling FirebaseAuthentication.signInWithGoogle()...');
+      const result = await FirebaseAuthentication.signInWithGoogle();
       
-      console.log('Calling FirebaseAuthentication.signInWithGoogle() with 10 second timeout...');
-      const signInPromise = FirebaseAuthentication.signInWithGoogle();
-      
-      const result = await Promise.race([signInPromise, timeoutPromise]) as any;
       console.log('Capacitor Firebase Google sign in successful:', result);
       return result;
     } catch (error: any) {
@@ -77,16 +72,23 @@ export const signInWithGoogle = async () => {
         fullError: error
       });
       
-      // Provide better error messages with simulator-specific guidance
+      // Provide better error messages with iOS-specific guidance
       let errorMessage = error?.message || 'Google Sign-In failed';
-      if (error?.message?.includes('timeout')) {
-        errorMessage = 'Google Sign-In timed out. Note: Google Sign-In may not work properly in iOS Simulator. Try testing on a real iOS device, or use email/password sign-in for testing.';
-      } else if (error?.code === 'popup_closed_by_user' || error?.message?.includes('canceled')) {
+      
+      if (error?.code === 'popup_closed_by_user' || error?.message?.includes('canceled') || error?.message?.includes('cancelled')) {
         errorMessage = 'Google Sign-In was canceled by user.';
       } else if (error?.code === 'network_error') {
         errorMessage = 'Network error during Google Sign-In. Please check your connection.';
-      } else if (error?.message?.includes('not initialized') || error?.message?.includes('RuntimeError')) {
-        errorMessage = 'Google Sign-In configuration error. This may not work in iOS Simulator - try on a real device or use email/password sign-in.';
+      } else if (error?.message?.includes('not initialized') || error?.message?.includes('RuntimeError') || error?.code === 'not-initialized') {
+        errorMessage = 'Google Sign-In configuration error. Please ensure the app is properly configured for iOS.';
+      } else if (error?.code === 'sign-in-cancelled' || error?.code === 'cancelled') {
+        errorMessage = 'Google Sign-In was canceled.';
+      } else if (error?.code === 'sign-in-failed') {
+        errorMessage = 'Google Sign-In failed. Please try again or use email/password sign-in.';
+      } else if (error?.message?.includes('timeout')) {
+        errorMessage = 'Google Sign-In timed out. Please try again.';
+      } else if (error?.message?.includes('No user interaction') || error?.code === 'no-user-interaction') {
+        errorMessage = 'Google Sign-In requires user interaction. Please try again.';
       }
       
       throw new Error(errorMessage);
