@@ -4,6 +4,7 @@
 import type { Session, Skill } from "@/lib/types";
 import { useMemo } from "react";
 import SummaryCard from "./summary-card";
+import EnhancedSummaryCard from "./enhanced-summary-card";
 import SessionsLog from "./sessions-log";
 import { Clock, Milestone, Moon, Book, Award, Users, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
@@ -66,45 +67,6 @@ export default function Dashboard({ sessions }: DashboardProps) {
           </CardContent>
         </Card>
       )}
-       {hasGoals && profile && (
-        <section>
-          <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ProgressCard 
-                title="Total Hours Goal"
-                currentValue={totalHours}
-                goalValue={profile.totalHoursGoal || 0}
-                unit="hours"
-              />
-              <ProgressCard 
-                title="Night Hours Goal"
-                currentValue={nightHours}
-                goalValue={profile.nightHoursGoal || 0}
-                unit="hours"
-              />
-          </div>
-        </section>
-       )}
-      <section>
-        <h2 className="text-2xl font-bold font-headline mb-4">Overall Progress</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SummaryCard
-            title="Total Hours"
-            value={totalHours.toFixed(1)}
-            icon={<Clock className="w-6 h-6 text-primary" />}
-          />
-          <SummaryCard
-            title="Total Miles"
-            value={totalMiles.toFixed(1)}
-            icon={<Milestone className="w-6 h-6 text-primary" />}
-          />
-          <SummaryCard
-            title="Night Hours"
-            value={nightHours.toFixed(1)}
-            icon={<Moon className="w-6 h-6 text-primary" />}
-          />
-        </div>
-      </section>
 
       {shares && shares.length > 0 && !isViewingSharedAccount && (
           <section>
@@ -128,6 +90,52 @@ export default function Dashboard({ sessions }: DashboardProps) {
               </Card>
           </section>
       )}
+
+       {hasGoals && profile && (
+        <section>
+          <h2 className="text-2xl font-bold font-headline mb-4">Goals</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ProgressCard 
+                title="Total Hours Goal"
+                currentValue={totalHours}
+                goalValue={profile.totalHoursGoal || 0}
+                unit="hours"
+              />
+              <ProgressCard 
+                title="Night Hours Goal"
+                currentValue={nightHours}
+                goalValue={profile.nightHoursGoal || 0}
+                unit="hours"
+              />
+          </div>
+        </section>
+       )}
+      <section>
+        <h2 className="text-2xl font-bold font-headline mb-4">Overall Progress</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <EnhancedSummaryCard
+            title="Total Hours"
+            value={totalHours.toFixed(1)}
+            icon={<Clock className="w-6 h-6 text-primary" />}
+            goalValue={hasGoals ? totalHoursGoal : undefined}
+            currentValue={hasGoals ? totalHours : undefined}
+            unit="hours"
+          />
+          <SummaryCard
+            title="Total Miles"
+            value={totalMiles.toFixed(1)}
+            icon={<Milestone className="w-6 h-6 text-primary" />}
+          />
+          <EnhancedSummaryCard
+            title="Night Hours"
+            value={nightHours.toFixed(1)}
+            icon={<Moon className="w-6 h-6 text-primary" />}
+            goalValue={hasGoals ? nightHoursGoal : undefined}
+            currentValue={hasGoals ? nightHours : undefined}
+            unit="hours"
+          />
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <section className="lg:col-span-2">
