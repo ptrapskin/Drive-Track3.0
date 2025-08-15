@@ -9,12 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Share2, Trash2, KeyRound } from 'lucide-react';
+import { Share2, Trash2, Mail, HelpCircle, MessageSquare, ExternalLink } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '@/firebase';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { db } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 interface Share {
@@ -32,9 +34,6 @@ export default function ProfilePage() {
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(profile);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [permitDate, setPermitDate] = useState<Date | undefined>();
-  
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [shareEmail, setShareEmail] = useState('');
   const [sharedWith, setSharedWith] = useState<Share[]>([]);
@@ -67,26 +66,50 @@ export default function ProfilePage() {
   }, [user, loading, router, fetchShares]);
 
   const handleLogout = async () => {
-    await logout();
-    router.push('/login');
+    console.log("Profile: handleLogout called");
+    try {
+      await logout();
+      console.log("Profile: logout completed, navigating to login");
+      router.push('/login');
+    } catch (error) {
+      console.error("Profile: logout error:", error);
+    }
   };
   
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !currentProfile) return;
+    if (!user) return;
+
+    // Use displayProfile instead of currentProfile
+    const profileData = currentProfile || displayProfile;
 
     // Create a clean object for Firestore, converting undefined to null
     const profileToSave: Omit<UserProfile, 'id'> = {
-        name: currentProfile.name || '',
-        email: user.email,
+        name: profileData.name || '',
+        email: user.email || '',
         dateOfBirth: dateOfBirth?.toISOString() || null,
         permitDate: permitDate?.toISOString() || null,
-        totalHoursGoal: currentProfile.totalHoursGoal || null,
-        nightHoursGoal: currentProfile.nightHoursGoal || null,
+        totalHoursGoal: profileData.totalHoursGoal || null,
+        nightHoursGoal: profileData.nightHoursGoal || null,
     };
 
     try {
-        await setDoc(doc(db, "profiles", user.uid), profileToSave, { merge: true });
+        if (Capacitor.isNativePlatform()) {
+            // Use Capacitor Firebase for native platforms
+            console.log("Profile: Using Capacitor Firebase to save profile");
+            await FirebaseFirestore.setDocument({
+                reference: `profiles/${user.uid}`,
+                data: profileToSave,
+                merge: true,
+            });
+        } else {
+            // Use web Firebase for browser/development
+            console.log("Profile: Using web Firebase to save profile");
+            await setDoc(doc(db, "profiles", user.uid), profileToSave, { merge: true });
+        }
+        
+        // Update the current profile state with saved data
+        setCurrentProfile({ id: user.uid, ...profileToSave });
         refetchProfile();
         toast({
             title: "Profile Saved",
@@ -98,34 +121,6 @@ export default function ProfilePage() {
             title: "Error Saving Profile",
             description: error.message,
         });
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Passwords do not match',
-        description: 'Please re-enter your new password.',
-      });
-      return;
-    }
-    if (!auth.currentUser) return;
-    try {
-      await updatePassword(auth.currentUser, newPassword);
-      setNewPassword('');
-      setConfirmPassword('');
-      toast({
-        title: 'Password Updated',
-        description: 'Your password has been changed successfully.',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error Changing Password',
-        description: error.message,
-      });
     }
   };
   
@@ -174,13 +169,24 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading || !user || !currentProfile) {
+  if (loading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-2xl">Loading...</div>
       </div>
     );
   }
+
+  // If currentProfile is null, create a default profile to allow the page to render
+  const displayProfile = currentProfile || {
+    id: user.uid,
+    name: '',
+    email: user.email || '',
+    dateOfBirth: null,
+    permitDate: null,
+    totalHoursGoal: null,
+    nightHoursGoal: null,
+  };
 
   return (
     <main className="min-h-screen">
@@ -229,8 +235,8 @@ export default function ProfilePage() {
                                     <Input
                                         id="name"
                                         type="text"
-                                        value={currentProfile.name || ''}
-                                        onChange={(e) => setCurrentProfile({...currentProfile, name: e.target.value})}
+                                        value={displayProfile.name || ''}
+                                        onChange={(e) => setCurrentProfile({...displayProfile, name: e.target.value})}
                                         placeholder="e.g. Alex Doe"
                                     />
                                 </div>
@@ -256,8 +262,8 @@ export default function ProfilePage() {
                                     <Input
                                         id="total-hours-goal"
                                         type="number"
-                                        value={currentProfile.totalHoursGoal || ''}
-                                        onChange={(e) => setCurrentProfile({...currentProfile, totalHoursGoal: Number(e.target.value)})}
+                                        value={displayProfile.totalHoursGoal || ''}
+                                        onChange={(e) => setCurrentProfile({...displayProfile, totalHoursGoal: Number(e.target.value)})}
                                         placeholder="e.g. 50"
                                     />
                                 </div>
@@ -266,8 +272,8 @@ export default function ProfilePage() {
                                     <Input
                                         id="night-hours-goal"
                                         type="number"
-                                        value={currentProfile.nightHoursGoal || ''}
-                                        onChange={(e) => setCurrentProfile({...currentProfile, nightHoursGoal: Number(e.target.value)})}
+                                        value={displayProfile.nightHoursGoal || ''}
+                                        onChange={(e) => setCurrentProfile({...displayProfile, nightHoursGoal: Number(e.target.value)})}
                                         placeholder="e.g. 10"
                                     />
                                 </div>
@@ -279,48 +285,6 @@ export default function ProfilePage() {
                     </form>
                 </CardContent>
             </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <KeyRound className="w-5 h-5"/>
-                        Security
-                    </CardTitle>
-                    <CardDescription>Update your password.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleChangePassword} className="space-y-6">
-                         <fieldset disabled={isViewingSharedAccount} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-password">New Password</Label>
-                                    <Input
-                                        id="new-password"
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="Enter new password"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                    <Input
-                                        id="confirm-password"
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="Confirm new password"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end">
-                                <Button type="submit">Change Password</Button>
-                            </div>
-                        </fieldset>
-                    </form>
-                </CardContent>
-             </Card>
           </div>
           <div className="md:col-span-1">
             <Card>
@@ -367,6 +331,93 @@ export default function ProfilePage() {
                       )}
                   </div>
                   </fieldset>
+                </CardContent>
+            </Card>
+
+            {/* Help & Support Section */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5 text-blue-600" />
+                        <CardTitle>Help & Support</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Need assistance or have feedback? We're here to help!
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4">
+                        {/* Contact Support */}
+                        <div className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                            <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-sm">Contact Support</h3>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    Get help with technical issues, account problems, or general questions.
+                                </p>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                        const subject = encodeURIComponent('Drive-Track Support Request');
+                                        const body = encodeURIComponent(`Hi Drive-Track Team,\n\nI need help with:\n\n[Please describe your issue or question here]\n\nAccount Email: ${user?.email || 'N/A'}\nDevice: ${navigator.userAgent.includes('iPhone') ? 'iPhone' : navigator.userAgent.includes('Android') ? 'Android' : 'Web'}\n\nThank you!`);
+                                        window.open(`mailto:hello@drive-track.com?subject=${subject}&body=${body}`, '_blank');
+                                    }}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Mail className="h-4 w-4" />
+                                    Email Support
+                                    <ExternalLink className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Submit Feedback */}
+                        <div className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:border-green-300 transition-colors">
+                            <MessageSquare className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-sm">Submit Feedback</h3>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    Share your thoughts, suggestions, or report bugs to help us improve.
+                                </p>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                        const subject = encodeURIComponent('Drive-Track App Feedback');
+                                        const body = encodeURIComponent(`Hi Drive-Track Team,\n\nI have feedback about the app:\n\n[Please share your thoughts, suggestions, or report any bugs here]\n\nWhat I like:\n\nWhat could be improved:\n\nAccount Email: ${user?.email || 'N/A'}\nApp Version: ${new Date().getFullYear()}\n\nThank you for building such a helpful app!`);
+                                        window.open(`mailto:hello@drive-track.com?subject=${subject}&body=${body}`, '_blank');
+                                    }}
+                                    className="flex items-center gap-2"
+                                >
+                                    <MessageSquare className="h-4 w-4" />
+                                    Send Feedback
+                                    <ExternalLink className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Quick Help */}
+                        <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                            <h3 className="font-semibold text-sm text-blue-900 mb-2">Quick Help</h3>
+                            <div className="space-y-2 text-sm text-blue-800">
+                                <p><strong>• Tracking Sessions:</strong> Go to Track → Start Session to log your driving</p>
+                                <p><strong>• Viewing Progress:</strong> Check Dashboard for hours summary and goals</p>
+                                <p><strong>• Sharing Account:</strong> Add guardian email above to share your progress</p>
+                                <p><strong>• Exporting Logs:</strong> Use Reports → Logs → Download PDF for official records</p>
+                            </div>
+                        </div>
+
+                        {/* Contact Info */}
+                        <div className="text-center pt-2 border-t border-gray-200">
+                            <p className="text-sm text-gray-600">
+                                Support Email: <span className="font-medium text-blue-600">hello@drive-track.com</span>
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                We typically respond within 24 hours
+                            </p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
           </div>

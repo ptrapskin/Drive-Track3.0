@@ -5,9 +5,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { Skill } from '@/lib/types';
 import { initialSkills as skillsTemplate } from '@/lib/skills-data';
 import { useAuth } from './auth-context';
+import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { db } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 
 interface SkillsContextType {
   skills: Skill[];
@@ -39,18 +41,38 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     setLoading(true);
-    const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+    
     try {
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const skillsData = docSnap.data().skills as Skill[];
-            setSkills(skillsData);
+        let skillsData: Skill[] = [];
+        
+        if (Capacitor.isNativePlatform()) {
+            // Use Capacitor Firebase for native platforms
+            console.log("Skills: Using Capacitor Firebase to fetch skills");
+            const result = await FirebaseFirestore.getDocument({
+                reference: `profiles/${activeProfileUid}/skills/userSkills`,
+            });
+            
+            if (result.snapshot.data && result.snapshot.data.skills) {
+                skillsData = result.snapshot.data.skills as Skill[];
+                console.log("Skills: Capacitor Firestore result:", skillsData);
+            } else {
+                console.log("Skills: No skills document found in Capacitor");
+            }
         } else {
-            // If no skills doc exists, start with an empty array.
-            // Skills will be created on-demand if the user visits the skills page.
-            setSkills([]);
+            // Use web Firebase for browser/development
+            console.log("Skills: Using web Firebase to fetch skills");
+            const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                skillsData = docSnap.data().skills as Skill[];
+                console.log("Skills: Web Firestore result:", skillsData);
+            } else {
+                console.log("Skills: No skills document found in web Firebase");
+            }
         }
+        
+        setSkills(skillsData);
     } catch (error) {
         console.error("Error fetching skills: ", error);
         setSkills([]); // Reset on error
@@ -72,8 +94,19 @@ export const SkillsProvider = ({ children }: { children: React.ReactNode }) => {
     setSkills(newSkills);
 
     try {
-        const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
-        await setDoc(docRef, { skills: newSkills });
+        if (Capacitor.isNativePlatform()) {
+            // Use Capacitor Firebase for native platforms
+            console.log("Skills: Using Capacitor Firebase to update skills");
+            await FirebaseFirestore.setDocument({
+                reference: `profiles/${activeProfileUid}/skills/userSkills`,
+                data: { skills: newSkills },
+            });
+        } else {
+            // Use web Firebase for browser/development
+            console.log("Skills: Using web Firebase to update skills");
+            const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+            await setDoc(docRef, { skills: newSkills });
+        }
     } catch (error: any) {
         // Revert UI change on error
         setSkills(skills);

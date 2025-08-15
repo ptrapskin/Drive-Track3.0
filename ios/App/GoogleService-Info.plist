@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>94983186341-2l6q8pvubmvqohaln0kftft7ucir6rtm.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.94983186341-2l6q8pvubmvqohaln0kftft7ucir6rtm</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCjNqgaLkmO63zOlgU0XwPduuNOdDy1D7k</string>
+	<string>AIzaSyB3npZXCQr22JNdZ_M8uIvSg-aWlzjV2_k</string>
 	<key>GCM_SENDER_ID</key>
 	<string>94983186341</string>
 	<key>PLIST_VERSION</key>
@@ -25,8 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:94983186341:ios:8f5205b1df8a48ae66ea4c</string>
-	<key>DATABASE_URL</key>
-	<string>https://drive-track-7027f-default-rtdb.firebaseio.com</string>
+	<string>1:94983186341:ios:d7f49d7b07fdd01166ea4c</string>
 </dict>
 </plist>

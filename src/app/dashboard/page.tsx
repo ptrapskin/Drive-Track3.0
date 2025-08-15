@@ -13,13 +13,19 @@ export default function DashboardPage() {
   const { user, loading: authLoading, logout, activeProfileEmail, isViewingSharedAccount } = useAuth();
   const router = useRouter();
 
+  console.log('Dashboard: Auth state:', { user: !!user, authLoading, userUid: user?.uid });
+  console.log('Dashboard: Sessions state:', { sessionsCount: sessions.length, sessionsLoading });
+
   useEffect(() => {
+    console.log('Dashboard: Auth effect triggered', { authLoading, user: !!user });
     if (!authLoading && !user) {
+      console.log('Dashboard: No user, redirecting to login');
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
   const loading = authLoading || sessionsLoading;
+  console.log('Dashboard: Final loading state:', { authLoading, sessionsLoading, combinedLoading: loading });
 
   const handleLogout = async () => {
     await logout();

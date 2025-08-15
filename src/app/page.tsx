@@ -22,24 +22,6 @@ export default function LandingPage() {
           >
             Login
           </Link>
-          <Link
-            href="/simple-login"
-            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
-          >
-            Test
-          </Link>
-          <Link
-            href="/test-dashboard"
-            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/debug"
-            className="text-xs sm:text-sm font-medium hover:underline underline-offset-4 px-2 py-1"
-          >
-            Debug
-          </Link>
           <Button asChild size="sm">
              <Link href="/signup">Start</Link>
           </Button>

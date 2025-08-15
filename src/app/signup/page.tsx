@@ -4,7 +4,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, signInWithGoogle } from '@/firebase';
+import { auth } from '@/firebase';
+import { signInWithGoogle } from '@/firebase-capacitor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import DriveTrackLogo from '@/components/drive-track-logo';
 import { useAuth } from '@/context/auth-context';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" {...props}>
@@ -30,7 +32,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, checkCapacitorAuth } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
@@ -50,48 +52,95 @@ export default function SignupPage() {
     }
     
     console.log('Attempting signup with email:', email);
-    console.log('Firebase auth object:', auth);
     console.log('Environment check:', {
       isCapacitor: typeof window !== 'undefined' && (window as any).Capacitor !== undefined,
       userAgent: navigator.userAgent
     });
     
     try {
-      console.log('Calling createUserWithEmailAndPassword...');
+      console.log('About to call createUserWithEmailAndPassword...');
       
-      // Add timeout to prevent infinite hanging (increased for simulator)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Authentication timeout - request took too long')), 20000);
-      });
+      // Check if we're in Capacitor environment and use appropriate method
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
       
-      const authPromise = createUserWithEmailAndPassword(auth, email, password);
+      if (isCapacitor) {
+        console.log('Using Capacitor Firebase Authentication plugin');
+        const result = await FirebaseAuthentication.createUserWithEmailAndPassword({
+          email,
+          password,
+        });
+        console.log('Capacitor Firebase signup successful:', result);
+        
+        // Sync auth state with context
+        console.log('Syncing Capacitor auth with context...');
+        await checkCapacitorAuth();
+        
+      } else {
+        console.log('Using web Firebase SDK');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('Web Firebase signup successful:', {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          emailVerified: userCredential.user.emailVerified
+        });
+      }
       
-      const userCredential = await Promise.race([authPromise, timeoutPromise]) as any;
-      console.log('Signup successful:', userCredential.user.uid);
-      router.push('/dashboard');
+      // Don't redirect immediately - let the auth context handle the redirect
+      // The useEffect above will redirect when user state updates
+      console.log('Signup completed, waiting for auth context to update...');
+      
     } catch (error: any) {
       console.error('Signup error details:', {
         code: error.code,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
+        fullError: error
       });
+      
+      // Better error messages for common Firebase auth errors
+      let errorMessage = error.message;
+      if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error - please check your internet connection and try again';
+      } else if (error.code === 'auth/timeout') {
+        errorMessage = 'Request timed out - please try again';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use at least 6 characters';
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
-        description: `Error: ${error.code || 'Unknown error'} - ${error.message}`,
+        description: errorMessage,
       });
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
-      router.push('/dashboard');
+      console.log('Starting Google sign-in...');
+      const result = await signInWithGoogle();
+      console.log('Google sign-in successful:', result);
+      
+      // Sync auth state with context if we're in Capacitor environment
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+      if (isCapacitor) {
+        console.log('Syncing Google auth with Capacitor context...');
+        await checkCapacitorAuth();
+      }
+      
+      // Let the auth context handle the redirect
+      console.log('Google sign-in completed, waiting for auth context to update...');
+      
     } catch (error: any) {
+      console.error('Google sign-in error:', error);
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',
-        description: error.message,
+        description: error.message || 'An error occurred during Google sign-in',
       });
     }
   };

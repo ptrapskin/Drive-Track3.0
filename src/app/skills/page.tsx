@@ -11,9 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import DashboardHeader from "@/components/dashboard-header";
 import { initialSkills } from "@/lib/skills-data";
+import { Button } from "@/components/ui/button";
+import { Capacitor } from '@capacitor/core';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { db } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Button } from "@/components/ui/button";
 
 export default function SkillsPage() {
   const { user, loading, logout, activeProfileEmail, isViewingSharedAccount, activeProfileUid } = useAuth();
@@ -38,8 +40,21 @@ export default function SkillsPage() {
     if (!activeProfileUid || isViewingSharedAccount) return;
     try {
       const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
-      const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
-      await setDoc(docRef, { skills: newSkills });
+      
+      if (Capacitor.isNativePlatform()) {
+        // Use Capacitor Firebase for native platforms
+        console.log("Skills: Using Capacitor Firebase to initialize skills");
+        await FirebaseFirestore.setDocument({
+          reference: `profiles/${activeProfileUid}/skills/userSkills`,
+          data: { skills: newSkills },
+        });
+      } else {
+        // Use web Firebase for browser/development
+        console.log("Skills: Using web Firebase to initialize skills");
+        const docRef = doc(db, 'profiles', activeProfileUid, 'skills', 'userSkills');
+        await setDoc(docRef, { skills: newSkills });
+      }
+      
       refetchSkills();
     } catch (error) {
       console.error("Failed to initialize skills:", error);

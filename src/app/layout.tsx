@@ -30,7 +30,7 @@ export default function RootLayout({
             <SkillsProvider>
               <div className="flex flex-col min-h-screen">
                 <main className="flex-1 bg-muted/40">
-                    <div className="pb-16 min-h-screen" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                    <div className="pb-20 min-h-screen" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
                         {children}
                     </div>
                 </main>

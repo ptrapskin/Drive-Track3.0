@@ -10,6 +10,7 @@ import SaveSessionDialog from "./save-session-dialog";
 import { TimeOfDayIcon } from "./sessions-log";
 import { haversineDistance } from "@/lib/geolocation";
 import { Sun, Cloud, CloudRain, Snowflake } from "lucide-react";
+import { Geolocation } from '@capacitor/geolocation';
 
 
 interface TrackerProps {
@@ -70,24 +71,32 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Afternoon");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  const watchIdRef = useRef<number | null>(null);
-  const lastPositionRef = useRef<GeolocationCoordinates | null>(null);
+  const watchIdRef = useRef<string | null>(null);
+  const lastPositionRef = useRef<{latitude: number, longitude: number} | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchWeather = async (lat: number, lon: number) => {
     try {
         const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
-        if (!apiKey) {
-            console.error("OpenWeather API key is missing.");
+        if (!apiKey || apiKey === 'your_api_key_here') {
+            console.warn("OpenWeather API key is not configured. Using fallback weather.");
+            setSessionWeather("Sunny");
             return;
         }
-        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+        
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+        const response = await fetch(url);
+        
         if (!response.ok) {
-            throw new Error('Failed to fetch weather data');
+            throw new Error(`Weather API responded with status: ${response.status}`);
         }
+        
         const data = await response.json();
         const weatherId = data.weather[0].id;
-        setSessionWeather(mapWeatherCondition(weatherId));
+        const mappedWeather = mapWeatherCondition(weatherId);
+        setSessionWeather(mappedWeather);
+        
+        console.log(`Weather updated: ${mappedWeather} (${data.weather[0].description})`);
     } catch (error) {
         console.error("Could not fetch weather:", error);
         // Fallback to a default weather
@@ -103,50 +112,85 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
             setElapsedSeconds((prev) => prev + 1);
         }, 1000);
 
-        // Start GPS tracking
-        if (navigator.geolocation) {
-            watchIdRef.current = navigator.geolocation.watchPosition(
-                (position) => {
-                    const { coords } = position;
-                    
-                    if (lastPositionRef.current) {
-                        const distance = haversineDistance(lastPositionRef.current, coords);
-                        setMiles((prevMiles) => prevMiles + distance);
-                    } else {
-                        // This is the first location update, fetch weather
-                        fetchWeather(coords.latitude, coords.longitude);
-                    }
+        // Start GPS tracking with native Capacitor plugin
+        const startGPSTracking = async () => {
+            try {
+                // Request permissions first
+                const permissions = await Geolocation.requestPermissions();
+                if (permissions.location !== 'granted') {
+                    alert("Location permission is required for GPS tracking. Please enable location access in settings.");
+                    return;
+                }
 
-                    lastPositionRef.current = coords;
-                    const speedMph = coords.speed ? coords.speed * 2.23694 : 0;
-                    
-                    let roadType: RoadType;
-                    if (speedMph <= 30) {
-                        roadType = "Residential";
-                    } else if (speedMph <= 55) {
-                        roadType = "Arterial";
-                    } else {
-                        roadType = "Highway";
+                // Start watching position
+                watchIdRef.current = await Geolocation.watchPosition(
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 3000
+                    },
+                    (position, err) => {
+                        if (err) {
+                            console.error("Geolocation error:", err);
+                            alert("GPS tracking error. Please check your location settings.");
+                            return;
+                        }
+
+                        if (position) {
+                            const coords = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                speed: position.coords.speed
+                            };
+                            
+                            if (lastPositionRef.current) {
+                                // Calculate distance using simple coordinate difference
+                                const distance = haversineDistance(
+                                    {
+                                        latitude: lastPositionRef.current.latitude,
+                                        longitude: lastPositionRef.current.longitude
+                                    } as any,
+                                    {
+                                        latitude: coords.latitude,
+                                        longitude: coords.longitude
+                                    } as any
+                                );
+                                setMiles((prevMiles) => prevMiles + distance);
+                            } else {
+                                // This is the first location update, fetch weather
+                                fetchWeather(coords.latitude, coords.longitude);
+                            }
+
+                            lastPositionRef.current = coords;
+                            const speedMph = coords.speed ? coords.speed * 2.23694 : 0;
+                            
+                            let roadType: RoadType;
+                            if (speedMph <= 30) {
+                                roadType = "Residential";
+                            } else if (speedMph <= 55) {
+                                roadType = "Arterial";
+                            } else {
+                                roadType = "Highway";
+                            }
+                            setCurrentRoadType(roadType);
+                            setSessionRoadTypes((prev) => new Set(prev).add(roadType));
+                        }
                     }
-                    setCurrentRoadType(roadType);
-                    setSessionRoadTypes((prev) => new Set(prev).add(roadType));
-                },
-                (error) => {
-                    console.error("Geolocation error:", error);
-                    alert("Geolocation is not available or permission was denied. Mileage, road type, and weather will not be tracked automatically.");
-                },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-            );
-        } else {
-            alert("Geolocation is not supported by this browser.");
-        }
+                );
+            } catch (error) {
+                console.error("Failed to start GPS tracking:", error);
+                alert("Unable to start GPS tracking. Please ensure location services are enabled.");
+            }
+        };
+
+        startGPSTracking();
     } else {
         // Clear timers and watchers
         if (timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);
         }
         if (watchIdRef.current) {
-            navigator.geolocation.clearWatch(watchIdRef.current);
+            Geolocation.clearWatch({ id: watchIdRef.current });
             watchIdRef.current = null;
         }
         lastPositionRef.current = null;
@@ -154,7 +198,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
 
     return () => {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+        if (watchIdRef.current) Geolocation.clearWatch({ id: watchIdRef.current });
     };
   }, [status]);
 
@@ -177,7 +221,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     setCurrentRoadType("Residential");
     setSessionRoadTypes(new Set());
     if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    if(watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+    if(watchIdRef.current) Geolocation.clearWatch({ id: watchIdRef.current });
     lastPositionRef.current = null;
   }, []);
 

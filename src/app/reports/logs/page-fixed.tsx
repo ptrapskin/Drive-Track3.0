@@ -4,9 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import SessionsLog from '@/components/sessions-log';
-import PDFExportComponent from '@/components/pdf-export';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Share } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSessions } from '@/context/sessions-context';
 import DashboardHeader from '@/components/dashboard-header';
@@ -148,23 +147,13 @@ export default function LogsPage() {
         isViewingSharedAccount={isViewingSharedAccount}
        />
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Driving Sessions Log</h1>
-            <Button onClick={downloadPdf} variant="outline" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Quick PDF (jsPDF)
-            </Button>
-          </div>
-          
-          {/* Enhanced PDF Export Component */}
-          <PDFExportComponent 
-            sessions={sessions}
-            userProfile={profile}
-            className="w-full max-w-md"
-          />
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Driving Sessions Log</h1>
+          <Button onClick={downloadPdf} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Download PDF Report
+          </Button>
         </div>
-        
         <SessionsLog sessions={sessions} />
       </div>
     </main>

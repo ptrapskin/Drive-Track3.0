@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/firebase';
+import { signInWithGoogle } from '@/firebase-capacitor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import DriveTrackLogo from '@/components/drive-track-logo';
 import { useAuth } from '@/context/auth-context';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" {...props}>
@@ -28,7 +30,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, checkCapacitorAuth } = useAuth();
 
   useEffect(() => {
     console.log('Login page - Auth state:', { 
@@ -77,29 +79,36 @@ export default function LoginPage() {
         throw new Error('Network connectivity check failed - please check your internet connection');
       }
       
-      // Use the regular Firebase web SDK
       console.log('About to call signInWithEmailAndPassword...');
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login successful:', {
-        uid: userCredential.user.uid,
-        email: userCredential.user.email,
-        emailVerified: userCredential.user.emailVerified
-      });
+      
+      // Check if we're in Capacitor environment and use appropriate method
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+      
+      if (isCapacitor) {
+        console.log('Using Capacitor Firebase Authentication plugin');
+        const result = await FirebaseAuthentication.signInWithEmailAndPassword({
+          email,
+          password,
+        });
+        console.log('Capacitor Firebase login successful:', result);
+        
+        // Sync auth state with context
+        console.log('Syncing Capacitor auth with context...');
+        await checkCapacitorAuth();
+        
+      } else {
+        console.log('Using web Firebase SDK');
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Web Firebase login successful:', {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          emailVerified: userCredential.user.emailVerified
+        });
+      }
       
       // Don't redirect immediately - let the auth context handle the redirect
       // The useEffect above will redirect when user state updates
       console.log('Login completed, waiting for auth context to update...');
-      
-      // Add a timeout safety net
-      setTimeout(() => {
-        console.log('Login timeout - checking auth state manually');
-        if (auth.currentUser) {
-          console.log('Auth has current user, forcing redirect');
-          router.push('/dashboard');
-        } else {
-          console.error('No current user after login - something went wrong');
-        }
-      }, 5000);
       
     } catch (error: any) {
       console.error('Login error details:', {
@@ -141,14 +150,26 @@ export default function LoginPage() {
   
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/dashboard');
+      console.log('Starting Google sign-in...');
+      const result = await signInWithGoogle();
+      console.log('Google sign-in successful:', result);
+      
+      // Sync auth state with context if we're in Capacitor environment
+      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+      if (isCapacitor) {
+        console.log('Syncing Google auth with Capacitor context...');
+        await checkCapacitorAuth();
+      }
+      
+      // Let the auth context handle the redirect
+      console.log('Google sign-in completed, waiting for auth context to update...');
+      
     } catch (error: any) {
+      console.error('Google sign-in error:', error);
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',
-        description: error.message,
+        description: error.message || 'An error occurred during Google sign-in',
       });
     }
   };
