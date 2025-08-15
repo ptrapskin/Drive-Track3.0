@@ -54,6 +54,10 @@ export const signInWithGoogle = async () => {
     try {
       console.log('About to call FirebaseAuthentication.signInWithGoogle()...');
       
+      // Check if we're in a valid environment
+      const platform = (window as any).Capacitor?.getPlatform();
+      console.log('Platform check:', platform);
+      
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
@@ -62,7 +66,31 @@ export const signInWithGoogle = async () => {
       });
       
       console.log('Calling FirebaseAuthentication.signInWithGoogle() with timeout...');
-      const signInPromise = FirebaseAuthentication.signInWithGoogle();
+      
+      // Add more detailed logging
+      console.log('Plugin availability check:', typeof FirebaseAuthentication?.signInWithGoogle);
+      
+      // Configure Google Sign-In with proper scopes and setup
+      const signInOptions = {
+        scopes: ['profile', 'email'],
+        // Request server auth code for backend authentication if needed
+        serverAuthCode: false,
+        // Force account selection to avoid cached accounts issues
+        forceCodeForRefreshToken: false
+      };
+      
+      console.log('Calling FirebaseAuthentication.signInWithGoogle with options:', signInOptions);
+      
+      const signInPromise = FirebaseAuthentication.signInWithGoogle(signInOptions).then(
+        (result) => {
+          console.log('✅ Google Sign-In plugin success:', result);
+          return result;
+        },
+        (error) => {
+          console.log('❌ Google Sign-In plugin error:', error);
+          throw error;
+        }
+      );
       
       const result = await Promise.race([signInPromise, timeoutPromise]) as any;
       console.log('Capacitor Firebase Google sign in successful:', result);
@@ -76,14 +104,31 @@ export const signInWithGoogle = async () => {
         fullError: error
       });
       
+      // Check if this is our timeout error or a real plugin error
+      if (error?.message?.includes('timeout')) {
+        console.error('🔍 Google Sign-In timed out. Debugging info:');
+        console.error('- Plugin function type:', typeof FirebaseAuthentication?.signInWithGoogle);
+        console.error('- Capacitor platform:', (window as any).Capacitor?.getPlatform());
+        console.error('- Capacitor available:', typeof (window as any).Capacitor);
+        
+        // Try to get current user to test plugin connectivity
+        try {
+          const currentUser = await FirebaseAuthentication.getCurrentUser();
+          console.error('- Plugin getCurrentUser test:', currentUser);
+        } catch (pluginError) {
+          console.error('- Plugin getCurrentUser failed:', pluginError);
+        }
+      }
+      
       // Provide better error messages with specific guidance
       let errorMessage = error?.message || 'Google Sign-In failed';
       
       if (error?.message?.includes('timeout')) {
-        errorMessage = 'Google Sign-In timed out. This usually indicates a configuration issue. Please check:\n' +
-                     '1. GoogleService-Info.plist is properly configured\n' +
-                     '2. URL schemes are set up correctly\n' +
-                     '3. Try testing on a real device instead of simulator';
+        errorMessage = 'Google Sign-In timed out. This usually indicates:\n' +
+                     '• GoogleService-Info.plist configuration issue\n' +
+                     '• Missing URL schemes in Info.plist\n' +
+                     '• Plugin not properly initialized\n' +
+                     'Try testing on a real device instead of simulator.';
       } else if (error?.code === 'popup_closed_by_user' || error?.message?.includes('canceled') || error?.message?.includes('cancelled')) {
         errorMessage = 'Google Sign-In was canceled by user.';
       } else if (error?.code === 'network_error') {

@@ -13,37 +13,103 @@ export default function GoogleSignInDebug() {
   const [error, setError] = useState<string>('');
   const [pluginInfo, setPluginInfo] = useState<string>('');
 
-  const checkPlugin = async () => {
+  const checkPluginDetailed = async () => {
+    setPluginInfo('');
     try {
-      // Check if plugin is available
-      const currentUser = await FirebaseAuthentication.getCurrentUser();
-      setPluginInfo(`Plugin available. Current user: ${JSON.stringify(currentUser, null, 2)}`);
+      // Detailed plugin check
+      console.log('🔍 Starting detailed plugin check...');
+      
+      const checks = [];
+      
+      // Check if Capacitor is available
+      const capacitorAvailable = typeof (window as any).Capacitor !== 'undefined';
+      checks.push(`Capacitor available: ${capacitorAvailable}`);
+      
+      if (capacitorAvailable) {
+        const platform = (window as any).Capacitor.getPlatform();
+        const isNative = (window as any).Capacitor.isNativePlatform();
+        checks.push(`Platform: ${platform}`);
+        checks.push(`Is Native: ${isNative}`);
+      }
+      
+      // Check if FirebaseAuthentication plugin is available
+      const pluginAvailable = typeof FirebaseAuthentication !== 'undefined';
+      checks.push(`FirebaseAuthentication plugin: ${pluginAvailable}`);
+      
+      if (pluginAvailable) {
+        const methods = Object.getOwnPropertyNames(FirebaseAuthentication);
+        checks.push(`Available methods: ${methods.join(', ')}`);
+        
+        // Test getCurrentUser (should work even when not signed in)
+        try {
+          const currentUser = await FirebaseAuthentication.getCurrentUser();
+          checks.push(`getCurrentUser test: SUCCESS - ${JSON.stringify(currentUser)}`);
+        } catch (err: any) {
+          checks.push(`getCurrentUser test: ERROR - ${err.message}`);
+        }
+        
+        // Check if we can call isSignInWithEmailLink (another safe method)
+        try {
+          if (typeof FirebaseAuthentication.isSignInWithEmailLink === 'function') {
+            const result = await FirebaseAuthentication.isSignInWithEmailLink({ emailLink: 'test' });
+            checks.push(`isSignInWithEmailLink test: SUCCESS - ${JSON.stringify(result)}`);
+          } else {
+            checks.push(`isSignInWithEmailLink: Method not available`);
+          }
+        } catch (err: any) {
+          checks.push(`isSignInWithEmailLink test: ERROR - ${err.message}`);
+        }
+      }
+      
+      setPluginInfo(checks.join('\n'));
+      
     } catch (err: any) {
-      setPluginInfo(`Plugin check error: ${err.message}`);
+      setPluginInfo(`Detailed check error: ${err.message}`);
     }
   };
 
-  const testDirectPlugin = async () => {
+  const testPluginConfiguration = async () => {
     setLoading(true);
     setResult('');
     setError('');
     
     try {
-      console.log('Testing direct plugin call...');
+      console.log('Testing plugin configuration...');
       
-      // Add a shorter timeout for testing
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Direct plugin timeout after 15 seconds')), 15000);
+      // First, try to check if we need to configure the plugin
+      console.log('Checking plugin configuration status...');
+      
+      // Try a simple method first
+      const currentUser = await FirebaseAuthentication.getCurrentUser();
+      console.log('Current user check:', currentUser);
+      
+      // Now try Google Sign-In with additional logging
+      console.log('Attempting Google Sign-In with detailed logging...');
+      
+      // Create a promise that resolves/rejects with more details
+      const googleSignIn = new Promise(async (resolve, reject) => {
+        try {
+          console.log('Calling FirebaseAuthentication.signInWithGoogle()...');
+          const result = await FirebaseAuthentication.signInWithGoogle();
+          console.log('Raw plugin result:', result);
+          resolve(result);
+        } catch (err) {
+          console.log('Plugin error details:', err);
+          reject(err);
+        }
       });
       
-      const signInPromise = FirebaseAuthentication.signInWithGoogle();
+      // Shorter timeout for testing
+      const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Configuration test timeout (15s)')), 15000);
+      });
       
-      const user = await Promise.race([signInPromise, timeoutPromise]);
-      console.log('Direct plugin sign-in successful:', user);
-      setResult(`Direct Plugin Success! User: ${JSON.stringify(user, null, 2)}`);
+      const result = await Promise.race([googleSignIn, timeout]);
+      setResult(`Configuration Test Success!\n${JSON.stringify(result, null, 2)}`);
+      
     } catch (err: any) {
-      console.error('Direct plugin sign-in failed:', err);
-      setError(`Direct Plugin Error: ${err.message}`);
+      console.error('Configuration test failed:', err);
+      setError(`Configuration Test Error: ${err.message}\n\nCheck console for detailed logs.`);
     } finally {
       setLoading(false);
     }
@@ -79,8 +145,8 @@ export default function GoogleSignInDebug() {
             <p>Is Native: {Capacitor.isNativePlatform() ? 'Yes' : 'No'}</p>
           </div>
           
-          <Button onClick={checkPlugin} className="w-full" variant="outline">
-            Check Plugin Status
+          <Button onClick={checkPluginDetailed} className="w-full" variant="outline">
+            Check Plugin Status (Detailed)
           </Button>
           
           {pluginInfo && (
@@ -93,11 +159,11 @@ export default function GoogleSignInDebug() {
           )}
           
           <Button 
-            onClick={testDirectPlugin} 
+            onClick={testPluginConfiguration} 
             disabled={loading}
             className="w-full"
           >
-            {loading ? 'Testing Direct Plugin...' : 'Test Direct Plugin'}
+            {loading ? 'Testing Configuration...' : 'Test Plugin Configuration'}
           </Button>
           
           <Button 
