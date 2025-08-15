@@ -30,6 +30,9 @@ const config: CapacitorConfig = {
     Share: {
       enableFileSharing: true,
     },
+    Browser: {
+      presentationStyle: 'popover',
+    },
   },
 };
 

@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Share2, Trash2, Mail, HelpCircle, MessageSquare, ExternalLink } from 'lucide-react';
+import { useEmailSupport } from '@/hooks/use-email-support';
+import { Share2, Trash2, Mail, HelpCircle, MessageSquare, ExternalLink, Copy } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import DashboardHeader from '@/components/dashboard-header';
 import { Capacitor } from '@capacitor/core';
@@ -30,6 +31,7 @@ export default function ProfilePage() {
   const { user, loading, profile, isViewingSharedAccount, logout, activeProfileEmail, refetchProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { openEmail } = useEmailSupport();
 
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(profile);
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
@@ -48,6 +50,63 @@ export default function ProfilePage() {
     });
     setSharedWith(shares);
   }, [user]);
+
+  const handleSupportEmail = async () => {
+    const deviceInfo = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
+                     navigator.userAgent.includes('Android') ? 'Android' : 'Web';
+    
+    await openEmail({
+      to: 'hello@drive-track.com',
+      subject: 'Drive-Track Support Request',
+      body: `Hi Drive-Track Team,
+
+I need help with:
+
+[Please describe your issue or question here]
+
+Account Email: ${user?.email || 'N/A'}
+Device: ${deviceInfo}
+
+Thank you!`
+    });
+  };
+
+  const handleFeedbackEmail = async () => {
+    await openEmail({
+      to: 'hello@drive-track.com',
+      subject: 'Drive-Track App Feedback',
+      body: `Hi Drive-Track Team,
+
+I have feedback about the app:
+
+[Please share your thoughts, suggestions, or report any bugs here]
+
+What I like:
+
+What could be improved:
+
+Account Email: ${user?.email || 'N/A'}
+App Version: ${new Date().getFullYear()}
+
+Thank you for building such a helpful app!`
+    });
+  };
+
+  const copyEmailToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText('hello@drive-track.com');
+      toast({
+        title: "Email Copied",
+        description: "hello@drive-track.com has been copied to your clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Please manually copy: hello@drive-track.com",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -358,11 +417,7 @@ export default function ProfilePage() {
                                 <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => {
-                                        const subject = encodeURIComponent('Drive-Track Support Request');
-                                        const body = encodeURIComponent(`Hi Drive-Track Team,\n\nI need help with:\n\n[Please describe your issue or question here]\n\nAccount Email: ${user?.email || 'N/A'}\nDevice: ${navigator.userAgent.includes('iPhone') ? 'iPhone' : navigator.userAgent.includes('Android') ? 'Android' : 'Web'}\n\nThank you!`);
-                                        window.open(`mailto:hello@drive-track.com?subject=${subject}&body=${body}`, '_blank');
-                                    }}
+                                    onClick={handleSupportEmail}
                                     className="flex items-center gap-2"
                                 >
                                     <Mail className="h-4 w-4" />
@@ -383,11 +438,7 @@ export default function ProfilePage() {
                                 <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => {
-                                        const subject = encodeURIComponent('Drive-Track App Feedback');
-                                        const body = encodeURIComponent(`Hi Drive-Track Team,\n\nI have feedback about the app:\n\n[Please share your thoughts, suggestions, or report any bugs here]\n\nWhat I like:\n\nWhat could be improved:\n\nAccount Email: ${user?.email || 'N/A'}\nApp Version: ${new Date().getFullYear()}\n\nThank you for building such a helpful app!`);
-                                        window.open(`mailto:hello@drive-track.com?subject=${subject}&body=${body}`, '_blank');
-                                    }}
+                                    onClick={handleFeedbackEmail}
                                     className="flex items-center gap-2"
                                 >
                                     <MessageSquare className="h-4 w-4" />
@@ -413,6 +464,15 @@ export default function ProfilePage() {
                             <p className="text-sm text-gray-600">
                                 Support Email: <span className="font-medium text-blue-600">hello@drive-track.com</span>
                             </p>
+                            <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={copyEmailToClipboard}
+                                className="mt-2 text-xs"
+                            >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy Email
+                            </Button>
                             <p className="text-xs text-gray-500 mt-1">
                                 We typically respond within 24 hours
                             </p>
