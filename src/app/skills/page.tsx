@@ -37,7 +37,7 @@ export default function SkillsPage() {
   };
 
   const initializeSkills = async () => {
-    if (!activeProfileUid || isViewingSharedAccount) return;
+    if (!activeProfileUid) return;
     try {
       const newSkills = initialSkills.map(skill => ({ ...skill, completed: false }));
       
@@ -92,10 +92,10 @@ export default function SkillsPage() {
         </header>
 
         {isViewingSharedAccount && (
-            <Card className="mb-8 bg-destructive/10 border-destructive">
+            <Card className="mb-8 bg-blue-50 border-blue-200">
                 <CardContent className="p-4">
-                    <p className="font-medium text-center text-destructive-foreground">
-                        You are viewing another user's skills. Editing is disabled.
+                    <p className="font-medium text-center text-blue-700">
+                        You are viewing a shared student account. You can help them track their driving skills.
                     </p>
                 </CardContent>
             </Card>
@@ -111,19 +111,18 @@ export default function SkillsPage() {
             </CardContent>
         </Card>
 
-        {skills.length === 0 && !isViewingSharedAccount ? (
+        {skills.length === 0 ? (
             <Card>
                 <CardContent className="pt-6 text-center">
-                    <p className="mb-4">You haven't started tracking your skills yet.</p>
+                    <p className="mb-4">
+                        {isViewingSharedAccount 
+                            ? "This student hasn't started tracking skills yet." 
+                            : "You haven't started tracking your skills yet."
+                        }
+                    </p>
                     <Button onClick={initializeSkills}>
                       Initialize Skills List
                     </Button>
-                </CardContent>
-            </Card>
-        ) : skills.length === 0 && isViewingSharedAccount ? (
-            <Card>
-                <CardContent className="pt-6 text-center">
-                    <p className="mb-4 text-muted-foreground">This user has not initialized their skills list.</p>
                 </CardContent>
             </Card>
         ) : (

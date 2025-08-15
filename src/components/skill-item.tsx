@@ -19,7 +19,6 @@ interface SkillItemProps {
 
 export default function SkillItem({ skill }: SkillItemProps) {
   const { toggleSkillCompletion } = useSkills();
-  const { isViewingSharedAccount } = useAuth();
 
   return (
     <AccordionItem value={`item-${skill.id}`}>
@@ -47,7 +46,6 @@ export default function SkillItem({ skill }: SkillItemProps) {
           <Button
             variant={skill.completed ? "secondary" : "default"}
             onClick={() => toggleSkillCompletion(skill.id)}
-            disabled={isViewingSharedAccount}
           >
             <Check className="mr-2 h-4 w-4" />
             {skill.completed ? "Mark as Incomplete" : "Mark as Completed"}

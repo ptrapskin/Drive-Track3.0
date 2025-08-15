@@ -127,11 +127,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (Capacitor.isNativePlatform()) {
-        // For now, skip sharing functionality on native platforms
-        // Complex queries are not easily supported in Capacitor Firebase
-        console.log("Auth: Skipping shares fetch on native platform");
-        setShares([]);
-        return;
+        // Use Capacitor Firebase for mobile
+        console.log("Auth: Using Capacitor Firebase to fetch shares");
+        const result = await FirebaseFirestore.getCollection({
+          reference: 'shares',
+          compositeFilter: {
+            type: 'and',
+            queryConstraints: [
+              {
+                type: 'where',
+                fieldPath: 'guardianEmail',
+                opStr: '==',
+                value: email,
+              },
+            ],
+          },
+        });
+        
+        const sharesData = result.snapshots.map((snapshot: any) => ({
+          id: snapshot.id,
+          ...snapshot.data
+        })) as Share[];
+        
+        console.log("Auth: Capacitor shares fetched:", sharesData);
+        setShares(sharesData);
       } else {
         // Use web Firebase for browser/development
         console.log("Auth: Using web Firebase to fetch shares");
@@ -152,7 +171,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [activeProfileUid, fetchProfile]);
   
+  // Validate if current user has permission to access a student's data
+  const validateGuardianAccess = useCallback((studentUid: string, studentEmail: string) => {
+    if (!user) return false;
+    
+    // User can always access their own data
+    if (user.uid === studentUid) return true;
+    
+    // Check if user is a guardian for this student
+    const hasAccess = shares.some(share => 
+      share.studentUid === studentUid && 
+      share.guardianEmail === user.email
+    );
+    
+    return hasAccess;
+  }, [user, shares]);
+  
   const setActiveProfile = (uid: string, email: string) => {
+    // Validate permission before switching
+    if (!validateGuardianAccess(uid, email)) {
+      console.error('Access denied: User does not have permission to view this account');
+      return;
+    }
+    
     setLoading(true);
     setActiveProfileUid(uid);
     setActiveProfileEmail(email);

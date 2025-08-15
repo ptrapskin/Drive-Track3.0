@@ -42,13 +42,45 @@ export default function ProfilePage() {
 
   const fetchShares = useCallback(async () => {
     if (!user) return;
-    const q = query(collection(db, "shares"), where("studentUid", "==", user.uid));
-    const querySnapshot = await getDocs(q);
-    const shares: Share[] = [];
-    querySnapshot.forEach((doc) => {
-        shares.push({ id: doc.id, ...doc.data() } as Share);
-    });
-    setSharedWith(shares);
+    
+    try {
+      let shares: Share[] = [];
+      
+      if (Capacitor.isNativePlatform()) {
+        // Use Capacitor Firebase for mobile
+        const result = await FirebaseFirestore.getCollection({
+          reference: 'shares',
+          compositeFilter: {
+            type: 'and',
+            queryConstraints: [
+              {
+                type: 'where',
+                fieldPath: 'studentUid',
+                opStr: '==',
+                value: user.uid,
+              },
+            ],
+          },
+        });
+        
+        shares = result.snapshots.map((snapshot: any) => ({
+          id: snapshot.id,
+          ...snapshot.data
+        })) as Share[];
+      } else {
+        // Use web Firebase for browser
+        const q = query(collection(db, "shares"), where("studentUid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          shares.push({ id: doc.id, ...doc.data() } as Share);
+        });
+      }
+      
+      setSharedWith(shares);
+    } catch (error) {
+      console.error('Error fetching shares:', error);
+      // Silently fail to avoid disrupting the UI
+    }
   }, [user]);
 
   const handleSupportEmail = async () => {
@@ -185,45 +217,77 @@ Thank you for building such a helpful app!`
   
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shareEmail || !user || !user.email) return;
+    
+    if (!shareEmail || !user || !user.email) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please enter an email address and ensure you're logged in.",
+      });
+      return;
+    }
     
     const shareData = {
         studentUid: user.uid,
         studentEmail: user.email,
         guardianEmail: shareEmail,
-        status: 'pending'
+        status: 'pending',
+        createdAt: new Date().toISOString()
     };
 
     try {
-        const docRef = await addDoc(collection(db, "shares"), shareData);
-        setSharedWith([...sharedWith, { id: docRef.id, ...shareData }]);
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor Firebase for mobile
+          const result = await FirebaseFirestore.addDocument({
+            reference: 'shares',
+            data: shareData,
+          });
+          
+          setSharedWith([...sharedWith, { id: result.reference.id, ...shareData }]);
+        } else {
+          // Use web Firebase for browser
+          const docRef = await addDoc(collection(db, "shares"), shareData);
+          setSharedWith([...sharedWith, { id: docRef.id, ...shareData }]);
+        }
+        
         setShareEmail('');
         toast({
           title: 'Account Shared',
           description: `Invitation sent to ${shareEmail}. They will see it upon their next login.`,
         });
     } catch (error: any) {
+        console.error('Error sharing account:', error);
         toast({
             variant: "destructive",
             title: "Error Sharing Account",
-            description: error.message,
+            description: error.message || 'Failed to share account. Please try again.',
         });
     }
   };
 
   const handleRemoveShare = async (shareId: string) => {
     try {
-        await deleteDoc(doc(db, "shares", shareId));
+        if (Capacitor.isNativePlatform()) {
+          // Use Capacitor Firebase for mobile
+          await FirebaseFirestore.deleteDocument({
+            reference: `shares/${shareId}`,
+          });
+        } else {
+          // Use web Firebase for browser
+          await deleteDoc(doc(db, "shares", shareId));
+        }
+        
         setSharedWith(sharedWith.filter((share) => share.id !== shareId));
         toast({
           title: 'Sharing Removed',
           description: `Access has been revoked.`,
         });
     } catch(error: any) {
+        console.error('Error removing share:', error);
         toast({
             variant: "destructive",
             title: "Error Removing Share",
-            description: error.message,
+            description: error.message || 'Failed to remove share. Please try again.',
         });
     }
   };
