@@ -54,13 +54,17 @@ export const signInWithGoogle = async () => {
     try {
       console.log('About to call FirebaseAuthentication.signInWithGoogle()...');
       
-      // For iOS, we need to ensure proper configuration
-      console.log('Checking Firebase Authentication plugin configuration...');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Google Sign-In timeout after 30 seconds. This may indicate a configuration issue.'));
+        }, 30000);
+      });
       
-      // Call the plugin directly without timeout for better error handling
-      console.log('Calling FirebaseAuthentication.signInWithGoogle()...');
-      const result = await FirebaseAuthentication.signInWithGoogle();
+      console.log('Calling FirebaseAuthentication.signInWithGoogle() with timeout...');
+      const signInPromise = FirebaseAuthentication.signInWithGoogle();
       
+      const result = await Promise.race([signInPromise, timeoutPromise]) as any;
       console.log('Capacitor Firebase Google sign in successful:', result);
       return result;
     } catch (error: any) {
@@ -72,10 +76,15 @@ export const signInWithGoogle = async () => {
         fullError: error
       });
       
-      // Provide better error messages with iOS-specific guidance
+      // Provide better error messages with specific guidance
       let errorMessage = error?.message || 'Google Sign-In failed';
       
-      if (error?.code === 'popup_closed_by_user' || error?.message?.includes('canceled') || error?.message?.includes('cancelled')) {
+      if (error?.message?.includes('timeout')) {
+        errorMessage = 'Google Sign-In timed out. This usually indicates a configuration issue. Please check:\n' +
+                     '1. GoogleService-Info.plist is properly configured\n' +
+                     '2. URL schemes are set up correctly\n' +
+                     '3. Try testing on a real device instead of simulator';
+      } else if (error?.code === 'popup_closed_by_user' || error?.message?.includes('canceled') || error?.message?.includes('cancelled')) {
         errorMessage = 'Google Sign-In was canceled by user.';
       } else if (error?.code === 'network_error') {
         errorMessage = 'Network error during Google Sign-In. Please check your connection.';
