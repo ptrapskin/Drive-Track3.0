@@ -154,15 +154,20 @@ export default function LoginPage() {
       const result = await signInWithGoogle();
       console.log('Google sign-in successful:', result);
       
-      // Sync auth state with context if we're in Capacitor environment
-      const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
-      if (isCapacitor) {
-        console.log('Syncing Google auth with Capacitor context...');
-        await checkCapacitorAuth();
-      }
+      // Force sync auth state with context
+      console.log('Syncing Google auth with context...');
+      await checkCapacitorAuth();
       
-      // Let the auth context handle the redirect
-      console.log('Google sign-in completed, waiting for auth context to update...');
+      // Force a page refresh to ensure the auth state is properly updated
+      console.log('Google sign-in completed, forcing auth state refresh...');
+      
+      // Small delay to ensure auth state propagates
+      setTimeout(() => {
+        if (window.location.pathname === '/login') {
+          console.log('Still on login page after Google sign-in, forcing redirect...');
+          router.push('/dashboard');
+        }
+      }, 1000);
       
     } catch (error: any) {
       console.error('Google sign-in error:', error);

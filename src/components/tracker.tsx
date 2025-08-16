@@ -115,28 +115,71 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
         // Start GPS tracking with native Capacitor plugin
         const startGPSTracking = async () => {
             try {
-                // Request permissions first
-                const permissions = await Geolocation.requestPermissions();
-                if (permissions.location !== 'granted') {
-                    alert("Location permission is required for GPS tracking. Please enable location access in settings.");
+                console.log('Starting GPS tracking...');
+                
+                // Check current permission status first
+                const currentPermissions = await Geolocation.checkPermissions();
+                console.log('Current location permissions:', currentPermissions);
+                
+                if (currentPermissions.location === 'denied') {
+                    alert("Location access is denied. Please go to Settings > Privacy & Security > Location Services and enable location access for Drive-Track.");
+                    setStatus("idle");
                     return;
                 }
+                
+                // Request permissions if not granted
+                if (currentPermissions.location !== 'granted') {
+                    console.log('Requesting location permissions...');
+                    const permissions = await Geolocation.requestPermissions();
+                    console.log('Permission request result:', permissions);
+                    
+                    if (permissions.location !== 'granted') {
+                        alert("Location permission is required for GPS tracking. Please enable location access in Settings > Privacy & Security > Location Services > Drive-Track.");
+                        setStatus("idle");
+                        return;
+                    }
+                }
 
-                // Start watching position
+                console.log('Location permissions granted, starting position watch...');
+
+                // Start watching position with more robust settings
                 watchIdRef.current = await Geolocation.watchPosition(
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 3000
+                        timeout: 30000, // Increased timeout to 30 seconds
+                        maximumAge: 5000 // Allow slightly older position data
                     },
                     (position, err) => {
                         if (err) {
                             console.error("Geolocation error:", err);
-                            alert("GPS tracking error. Please check your location settings.");
+                            console.error("Error details:", {
+                                code: err.code,
+                                message: err.message
+                            });
+                            
+                            // Provide specific error messages based on error code
+                            let errorMessage = "GPS tracking error occurred.";
+                            if (err.code === 1) {
+                                errorMessage = "Location access denied. Please enable location services for Drive-Track in Settings.";
+                            } else if (err.code === 2) {
+                                errorMessage = "Unable to determine location. Please ensure GPS is enabled and try again outdoors.";
+                            } else if (err.code === 3) {
+                                errorMessage = "Location request timed out. Please try again, preferably outdoors with clear GPS signal.";
+                            }
+                            
+                            alert(errorMessage);
+                            setStatus("idle");
                             return;
                         }
 
                         if (position) {
+                            console.log('GPS position received:', {
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude,
+                                accuracy: position.coords.accuracy,
+                                speed: position.coords.speed
+                            });
+                            
                             const coords = {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude,
@@ -158,6 +201,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                                 setMiles((prevMiles) => prevMiles + distance);
                             } else {
                                 // This is the first location update, fetch weather
+                                console.log('First GPS position received, fetching weather...');
                                 fetchWeather(coords.latitude, coords.longitude);
                             }
 
@@ -177,9 +221,13 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                         }
                     }
                 );
+                
+                console.log('GPS watch started with ID:', watchIdRef.current);
+                
             } catch (error) {
                 console.error("Failed to start GPS tracking:", error);
-                alert("Unable to start GPS tracking. Please ensure location services are enabled.");
+                alert("Unable to start GPS tracking. Please ensure location services are enabled in Settings > Privacy & Security > Location Services > Drive-Track.");
+                setStatus("idle");
             }
         };
 
