@@ -35,6 +35,11 @@ const config: CapacitorConfig = {
     Browser: {
       presentationStyle: 'popover',
     },
+    Geolocation: {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000,
+    },
   },
 };
 

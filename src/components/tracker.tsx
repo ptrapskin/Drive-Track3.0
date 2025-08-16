@@ -72,7 +72,7 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const watchIdRef = useRef<string | null>(null);
-  const lastPositionRef = useRef<{latitude: number, longitude: number} | null>(null);
+  const lastPositionRef = useRef<{latitude: number, longitude: number, speed?: number} | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchWeather = async (lat: number, lon: number) => {
@@ -146,44 +146,70 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                 watchIdRef.current = await Geolocation.watchPosition(
                     {
                         enableHighAccuracy: true,
-                        timeout: 30000, // Increased timeout to 30 seconds
-                        maximumAge: 5000 // Allow slightly older position data
+                        timeout: 15000, // Reduced timeout to 15 seconds
+                        maximumAge: 10000 // Allow up to 10 seconds old position data as fallback
                     },
                     (position, err) => {
                         if (err) {
                             console.error("Geolocation error:", err);
                             console.error("Error details:", {
                                 code: err.code,
-                                message: err.message
+                                message: err.message,
+                                timestamp: new Date().toISOString()
                             });
+                            
+                            // Don't immediately stop tracking for timeout errors - they're common
+                            if (err.code === 3) { // TIMEOUT
+                                console.warn("GPS timeout occurred, waiting for next update...");
+                                return; // Continue tracking, don't alert user for timeouts
+                            }
                             
                             // Provide specific error messages based on error code
                             let errorMessage = "GPS tracking error occurred.";
-                            if (err.code === 1) {
+                            let shouldStop = true;
+                            
+                            if (err.code === 1) { // PERMISSION_DENIED
                                 errorMessage = "Location access denied. Please enable location services for Drive-Track in Settings.";
-                            } else if (err.code === 2) {
+                            } else if (err.code === 2) { // POSITION_UNAVAILABLE
                                 errorMessage = "Unable to determine location. Please ensure GPS is enabled and try again outdoors.";
-                            } else if (err.code === 3) {
-                                errorMessage = "Location request timed out. Please try again, preferably outdoors with clear GPS signal.";
+                                shouldStop = false; // Don't stop, GPS might recover
                             }
                             
-                            alert(errorMessage);
-                            setStatus("idle");
+                            if (shouldStop) {
+                                alert(errorMessage);
+                                setStatus("idle");
+                            } else {
+                                console.warn(errorMessage);
+                            }
                             return;
                         }
 
-                        if (position) {
+                        if (position && position.coords) {
                             console.log('GPS position received:', {
                                 lat: position.coords.latitude,
                                 lon: position.coords.longitude,
                                 accuracy: position.coords.accuracy,
-                                speed: position.coords.speed
+                                speed: position.coords.speed,
+                                timestamp: new Date().toISOString()
                             });
+                            
+                            // Validate coordinates are reasonable
+                            if (Math.abs(position.coords.latitude) > 90 || 
+                                Math.abs(position.coords.longitude) > 180) {
+                                console.error('Invalid GPS coordinates received:', position.coords);
+                                return;
+                            }
+                            
+                            // Filter out positions with very poor accuracy (> 100 meters)
+                            if (position.coords.accuracy && position.coords.accuracy > 100) {
+                                console.warn('Poor GPS accuracy, skipping update:', position.coords.accuracy);
+                                return;
+                            }
                             
                             const coords = {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude,
-                                speed: position.coords.speed
+                                speed: position.coords.speed || 0
                             };
                             
                             if (lastPositionRef.current) {
@@ -198,7 +224,13 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
                                         longitude: coords.longitude
                                     } as any
                                 );
-                                setMiles((prevMiles) => prevMiles + distance);
+                                
+                                // Only add distance if it's reasonable (not a GPS jump)
+                                if (distance < 0.5) { // Less than half a mile jump
+                                    setMiles((prevMiles) => prevMiles + distance);
+                                } else {
+                                    console.warn('Large GPS jump detected, ignoring distance:', distance);
+                                }
                             } else {
                                 // This is the first location update, fetch weather
                                 console.log('First GPS position received, fetching weather...');
@@ -236,17 +268,29 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
         // Clear timers and watchers
         if (timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
         }
         if (watchIdRef.current) {
-            Geolocation.clearWatch({ id: watchIdRef.current });
+            try {
+                Geolocation.clearWatch({ id: watchIdRef.current });
+                console.log('GPS watch cleared successfully');
+            } catch (error) {
+                console.error('Error clearing GPS watch:', error);
+            }
             watchIdRef.current = null;
         }
         lastPositionRef.current = null;
     }
 
     return () => {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        if (watchIdRef.current) Geolocation.clearWatch({ id: watchIdRef.current });
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+        }
+        if (watchIdRef.current) {
+            Geolocation.clearWatch({ id: watchIdRef.current }).catch(console.error);
+            watchIdRef.current = null;
+        }
     };
   }, [status]);
 
@@ -268,8 +312,21 @@ export default function Tracker({ onSaveSession }: TrackerProps) {
     setMiles(0);
     setCurrentRoadType("Residential");
     setSessionRoadTypes(new Set());
-    if(timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    if(watchIdRef.current) Geolocation.clearWatch({ id: watchIdRef.current });
+    
+    // Clean up timers and GPS watch
+    if(timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+    }
+    if(watchIdRef.current) {
+        try {
+            Geolocation.clearWatch({ id: watchIdRef.current });
+            console.log('GPS watch cleared in resetTracker');
+        } catch (error) {
+            console.error('Error clearing GPS watch in resetTracker:', error);
+        }
+        watchIdRef.current = null;
+    }
     lastPositionRef.current = null;
   }, []);
 

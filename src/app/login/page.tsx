@@ -253,13 +253,6 @@ export default function LoginPage() {
               Sign up
             </Link>
           </p>
-          
-          {/* Temporary Debug Link */}
-          <div className="mt-2 text-center">
-            <Link href="/google-debug" className="text-xs text-muted-foreground hover:underline">
-              🔧 Google Sign-In Debug
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
